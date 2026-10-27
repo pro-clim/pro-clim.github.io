@@ -1,19 +1,19 @@
 
 {
-  "id": "/Pro-clim/",
+  "id": "/",
   "name": "Pro Clim",
   "short_name": "Pro Clim",
   "description": "Assistant du technicien CVC — Étude, diagnostic et formation",
   "lang": "fr-FR",
-  "start_url": "/Pro-clim/",
-  "scope": "/Pro-clim/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0D47A1",
   "theme_color": "#0D47A1",
   "icons": [
     {
-      "src": "/Pro-clim/assets/icon-pro-clim.png.png",
+      "src": "/assets/icon-pro-clim.png.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any"
