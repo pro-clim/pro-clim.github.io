@@ -1,112 +1,177 @@
 
-/* ==========================================
+/* =========================================================
    PRO CLIM — VISITE CHANTIER
-   Module indépendant
-   Version 1.0
-========================================== */
+   Version 2.0 — Aperçu PDF intégré, sans fenêtre secondaire
+   ========================================================= */
 
 (() => {
     "use strict";
 
-    document.addEventListener("DOMContentLoaded", initialiser);
+    const ID_STYLE = "proclim-visite-style";
+    const ID_OVERLAY = "visiteOverlay";
 
-    function initialiser() {
-        const accueil = document.getElementById("pageAccueil");
+    let pieces = [];
+    let numeroPiece = 0;
+    let dossierHTML = "";
 
-        if (!accueil) {
-            console.error("Pro Clim : page d'accueil introuvable.");
-            return;
-        }
+    const $ = (id) => document.getElementById(id);
 
-        // Évite une double installation du module.
-        if (document.getElementById("btnVisiteChantier")) return;
+    function echapper(texte) {
+        return String(texte ?? "").replace(/[&<>"']/g, (caractere) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+        })[caractere]);
+    }
 
-        ajouterStyles();
-        creerAccesAccueil();
-        creerInterface();
+    function valeur(id) {
+        const element = $(id);
+        return element ? element.value.trim() : "";
+    }
+
+    function nombre(id) {
+        const element = $(id);
+        if (!element) return 0;
+        return Number(String(element.value).replace(",", ".")) || 0;
+    }
+
+    function euros(valeur) {
+        const n = Number(valeur);
+        if (!Number.isFinite(n)) return "";
+        return n.toLocaleString("fr-FR", {
+            style: "currency",
+            currency: "EUR"
+        });
+    }
+
+    function dateDuJour() {
+        const maintenant = new Date();
+        return [
+            maintenant.getFullYear(),
+            String(maintenant.getMonth() + 1).padStart(2, "0"),
+            String(maintenant.getDate()).padStart(2, "0")
+        ].join("-");
+    }
+
+    function dateFr(date) {
+        if (!date) return "";
+        const morceaux = date.split("-");
+        if (morceaux.length !== 3) return date;
+        return `${morceaux[2]}/${morceaux[1]}/${morceaux[0]}`;
     }
 
     function ajouterStyles() {
+        if ($(ID_STYLE)) return;
+
         const style = document.createElement("style");
-        style.id = "styleVisiteChantier";
+        style.id = ID_STYLE;
 
         style.textContent = `
             #btnVisiteChantier {
+                width: 100%;
+                min-height: 76px;
+                border: 1px solid rgba(13,71,161,.18);
+                border-radius: 14px;
+                background: #fff;
+                color: #0D47A1;
+                font-size: 16px;
+                font-weight: 700;
+                padding: 14px;
                 cursor: pointer;
-                border: 1px solid #dce5f1;
                 text-align: left;
             }
 
+            #btnVisiteChantier small {
+                display: block;
+                margin-top: 5px;
+                color: #64748b;
+                font-size: 12px;
+                font-weight: 400;
+            }
+
             #visiteOverlay {
+                display: none;
                 position: fixed;
                 inset: 0;
-                z-index: 10000;
-                display: none;
+                z-index: 99990;
+                background: #f1f5f9;
                 overflow-y: auto;
-                background: #f3f6fa;
+                -webkit-overflow-scrolling: touch;
                 padding: 14px;
+            }
+
+            #visiteOverlay.vc-visible {
+                display: block;
+            }
+
+            .vc-container {
+                width: 100%;
+                max-width: 700px;
+                margin: 0 auto;
                 padding-bottom: 35px;
             }
 
-            #visiteOverlay.active { display: block; }
-
-            .vc-container {
-                max-width: 700px;
-                margin: 0 auto;
-            }
-
             .vc-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                margin-bottom: 18px;
+                background: #0D47A1;
+                color: white;
+                padding: 19px;
+                border-radius: 14px;
+                margin-bottom: 15px;
             }
 
             .vc-header h2 {
+                margin: 0 0 5px;
+                font-size: 21px;
+            }
+
+            .vc-header p {
                 margin: 0;
-                color: #0d47a1;
-                font-size: 22px;
+                font-size: 13px;
+                opacity: .9;
             }
 
             .vc-card {
                 background: white;
-                border-radius: 14px;
+                border-radius: 13px;
                 padding: 16px;
-                margin-bottom: 14px;
-                box-shadow: 0 2px 8px rgba(0,0,0,.05);
+                margin-bottom: 13px;
+                box-shadow: 0 2px 8px rgba(0,0,0,.045);
             }
 
             .vc-card h3 {
-                margin: 0 0 14px;
-                color: #0d47a1;
-                font-size: 17px;
+                color: #0D47A1;
+                font-size: 16px;
+                margin: 0 0 13px;
             }
 
-            .vc-field { margin-bottom: 13px; }
-
-            .vc-field label {
+            .vc-field {
                 display: block;
+                margin-bottom: 12px;
+                color: #334155;
+                font-size: 13px;
                 font-weight: 600;
-                margin-bottom: 6px;
-                font-size: 14px;
             }
 
             .vc-field input,
             .vc-field select,
             .vc-field textarea {
-                width: 100%;
+                display: block;
                 box-sizing: border-box;
-                padding: 12px;
-                border: 1px solid #ccd5e0;
+                width: 100%;
+                margin-top: 6px;
+                padding: 11px;
+                border: 1px solid #cbd5e1;
                 border-radius: 9px;
                 background: white;
-                color: #263238;
-                font-size: 16px;
+                color: #0f172a;
+                font: inherit;
+                font-size: 15px;
             }
 
             .vc-field textarea {
-                min-height: 85px;
+                min-height: 75px;
                 resize: vertical;
             }
 
@@ -116,700 +181,803 @@
                 gap: 10px;
             }
 
-            .vc-room {
-                border: 1px solid #dce5f1;
-                border-radius: 10px;
+            .vc-piece {
+                border: 1px solid #dbe3ed;
+                border-radius: 11px;
                 padding: 12px;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
+                background: #fbfdff;
             }
 
-            .vc-room strong {
-                display: block;
-                margin-bottom: 9px;
-                color: #0d47a1;
+            .vc-piece h4 {
+                margin: 0 0 10px;
+                color: #0D47A1;
+                font-size: 14px;
+            }
+
+            .vc-piece-result {
+                color: #475569;
+                font-size: 12px;
+                margin: 5px 0 10px;
             }
 
             .vc-button {
-                display: block;
                 width: 100%;
                 border: 0;
                 border-radius: 10px;
                 padding: 14px;
-                margin-top: 10px;
-                font-size: 16px;
+                font-size: 15px;
                 font-weight: 700;
                 cursor: pointer;
+                margin-top: 8px;
             }
 
             .vc-primary {
-                background: #0d47a1;
                 color: white;
+                background: #0D47A1;
             }
 
             .vc-secondary {
-                background: #e7edf5;
-                color: #17365f;
+                color: #0D47A1;
+                background: #e8f0fe;
             }
 
-            .vc-close {
-                border: 0;
-                border-radius: 9px;
-                padding: 10px 13px;
-                background: #e7edf5;
-                color: #17365f;
-                font-weight: 700;
-                cursor: pointer;
-            }
-
-            .vc-note {
-                color: #64748b;
-                font-size: 13px;
-                line-height: 1.5;
+            .vc-danger {
+                color: #b91c1c;
+                background: #fee2e2;
+                padding: 8px;
+                font-size: 12px;
             }
 
             .vc-total {
-                padding: 12px;
-                background: #eef4fc;
+                padding: 11px;
                 border-radius: 9px;
+                background: #eff6ff;
+                color: #0D47A1;
                 font-weight: 700;
-                color: #0d47a1;
+                margin-top: 10px;
             }
 
-            @media(max-width:380px) {
-                .vc-grid { grid-template-columns: 1fr; }
+            #vcApercu {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 100000;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                background: #e2e8f0;
+                padding: 12px;
+            }
+
+            #vcApercu.vc-visible {
+                display: block;
+            }
+
+            .vc-preview-bar {
+                max-width: 800px;
+                margin: 0 auto 12px;
+                padding: 12px;
+                border-radius: 12px;
+                background: white;
+                box-shadow: 0 2px 8px rgba(0,0,0,.08);
+            }
+
+            .vc-preview-bar p {
+                margin: 0 0 8px;
+                font-size: 13px;
+                color: #475569;
+            }
+
+            .vc-document {
+                box-sizing: border-box;
+                max-width: 800px;
+                margin: 0 auto 25px;
+                padding: 35px;
+                background: white;
+                color: #172033;
+                font-family: Arial, sans-serif;
+                font-size: 13px;
+                line-height: 1.5;
+                box-shadow: 0 2px 12px rgba(0,0,0,.08);
+            }
+
+            .vc-document h1 {
+                color: #0D47A1;
+                font-size: 25px;
+                margin: 0;
+            }
+
+            .vc-document h2 {
+                color: #0D47A1;
+                font-size: 16px;
+                border-bottom: 1px solid #dbe3ed;
+                padding-bottom: 5px;
+                margin: 23px 0 10px;
+            }
+
+            .vc-document p {
+                margin: 5px 0;
+                overflow-wrap: anywhere;
+            }
+
+            .vc-document .vc-doc-subtitle {
+                color: #64748b;
+                margin-top: 4px;
+            }
+
+            .vc-document .vc-doc-line {
+                padding: 7px 0;
+                border-bottom: 1px solid #edf0f4;
+            }
+
+            .vc-document .vc-doc-label {
+                color: #64748b;
+                font-weight: 600;
+            }
+
+            .vc-document .vc-doc-room {
+                border: 1px solid #dbe3ed;
+                border-radius: 8px;
+                padding: 10px;
+                margin: 9px 0;
+                break-inside: avoid;
+            }
+
+            .vc-document .vc-doc-total {
+                background: #eff6ff;
+                padding: 12px;
+                border-radius: 8px;
+                font-weight: 700;
+                color: #0D47A1;
+                margin-top: 10px;
+            }
+
+            .vc-document .vc-doc-footer {
+                margin-top: 30px;
+                padding-top: 10px;
+                border-top: 1px solid #dbe3ed;
+                color: #64748b;
+                font-size: 10px;
+            }
+
+            @media (max-width: 480px) {
+                .vc-grid {
+                    grid-template-columns: 1fr 1fr;
+                }
+                .vc-document {
+                    padding: 20px;
+                }
+            }
+
+            @media print {
+                @page {
+                    size: A4;
+                    margin: 15mm;
+                }
+
+                body * {
+                    visibility: hidden !important;
+                }
+
+                #vcApercu,
+                #vcApercu * {
+                    visibility: visible !important;
+                }
+
+                #vcApercu {
+                    display: block !important;
+                    position: absolute !important;
+                    inset: 0 !important;
+                    overflow: visible !important;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    background: white !important;
+                }
+
+                #vcApercu .vc-preview-bar {
+                    display: none !important;
+                }
+
+                #vcDocument {
+                    display: block !important;
+                    visibility: visible !important;
+                    width: 100% !important;
+                    max-width: none !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    box-shadow: none !important;
+                }
+
+                .vc-document h2,
+                .vc-document .vc-doc-room {
+                    break-after: avoid;
+                }
+
+                .vc-document .vc-doc-room {
+                    break-inside: avoid;
+                }
             }
         `;
 
         document.head.appendChild(style);
     }
 
-    function creerAccesAccueil() {
-        const grille = document.querySelector("#pageAccueil .quick-grid");
-
-        if (!grille) {
-            console.warn("Pro Clim : grille d'accueil introuvable.");
-            return;
-        }
-
-        const bouton = document.createElement("button");
-        bouton.type = "button";
-        bouton.id = "btnVisiteChantier";
-        bouton.className = "quick-card";
-
-        bouton.innerHTML = `
-            <span style="font-size:25px">🏗️</span>
-            <strong>Visite chantier</strong>
-            <small>Préparation et dossier client</small>
-        `;
-
-        bouton.addEventListener("click", ouvrir);
-        grille.appendChild(bouton);
-    }
-
     function creerInterface() {
+        if ($(ID_OVERLAY)) return;
+
         const overlay = document.createElement("div");
-        overlay.id = "visiteOverlay";
+        overlay.id = ID_OVERLAY;
 
         overlay.innerHTML = `
             <div class="vc-container">
-
                 <div class="vc-header">
-                    <h2>🏗️ Visite chantier</h2>
-                    <button type="button" class="vc-close" id="vcFermer">
-                        Fermer ✕
-                    </button>
+                    <h2>🏠 Visite chantier</h2>
+                    <p>Préparation et compte rendu de visite client</p>
                 </div>
 
-                <div class="vc-card">
-                    <h3>👤 Informations du projet</h3>
+                <section class="vc-card">
+                    <h3>Informations client</h3>
 
-                    <div class="vc-field">
-                        <label for="vcClient">Nom du client</label>
+                    <label class="vc-field">Nom du client
                         <input id="vcClient" type="text" placeholder="Nom / Société">
-                    </div>
+                    </label>
 
-                    <div class="vc-field">
-                        <label for="vcAdresse">Adresse du chantier</label>
+                    <label class="vc-field">Adresse du chantier
                         <input id="vcAdresse" type="text" placeholder="Adresse complète">
-                    </div>
+                    </label>
 
                     <div class="vc-grid">
-                        <div class="vc-field">
-                            <label for="vcTelephone">Téléphone</label>
+                        <label class="vc-field">Téléphone
                             <input id="vcTelephone" type="tel" placeholder="Téléphone">
-                        </div>
-
-                        <div class="vc-field">
-                            <label for="vcDate">Date de visite</label>
+                        </label>
+                        <label class="vc-field">Date de visite
                             <input id="vcDate" type="date">
-                        </div>
+                        </label>
                     </div>
 
-                    <div class="vc-field">
-                        <label for="vcProjet">Objet du projet</label>
-                        <input id="vcProjet" type="text"
-                               placeholder="Ex : Climatisation maison">
-                    </div>
-                </div>
+                    <label class="vc-field">Projet
+                        <input id="vcProjet" type="text" placeholder="Ex. : Climatisation salon">
+                    </label>
+                </section>
 
-                <div class="vc-card">
-                    <h3>❄️ Installation envisagée</h3>
+                <section class="vc-card">
+                    <h3>Installation envisagée</h3>
 
-                    <div class="vc-field">
-                        <label for="vcType">Type d'installation</label>
+                    <label class="vc-field">Type d'installation
                         <select id="vcType">
-                            <option value="">Non défini</option>
+                            <option value="">À définir</option>
                             <option value="Split mural">Split mural</option>
                             <option value="Multi-split">Multi-split</option>
                             <option value="Gainable">Gainable</option>
-                            <option value="À définir">À définir sur chantier</option>
+                            <option value="Autre">Autre</option>
                         </select>
-                    </div>
-
-                    <div class="vc-field">
-                        <label for="vcMarque">Marque envisagée (facultatif)</label>
-                        <input id="vcMarque" type="text"
-                               placeholder="À compléter si connue">
-                    </div>
-
-                    <div class="vc-field">
-                        <label for="vcModele">Modèle / Référence (facultatif)</label>
-                        <input id="vcModele" type="text"
-                               placeholder="Référence matériel">
-                    </div>
-
-                    <div class="vc-field">
-                        <label for="vcPuissance">Puissance envisagée (facultatif)</label>
-                        <input id="vcPuissance" type="text"
-                               placeholder="Ex : 3,5 kW">
-                    </div>
-
-                    <p class="vc-note">
-                        Les informations de l'étude Pro Clim seront reprises
-                        automatiquement dans le dossier lorsqu'elles existent.
-                    </p>
-                </div>
-
-                <div class="vc-card">
-                    <h3>📐 Pièces et observations</h3>
-
-                    <div id="vcPieces">
-                        <p class="vc-note">
-                            Aucune pièce récupérée depuis l'étude pour le moment.
-                            Tu peux tout de même ajouter tes observations ci-dessous.
-                        </p>
-                    </div>
-
-                    <div class="vc-field">
-                        <label for="vcObservations">Observations générales</label>
-                        <textarea id="vcObservations"
-                            placeholder="Configuration du logement, accès, attentes du client..."></textarea>
-                    </div>
-                </div>
-
-                <div class="vc-card">
-                    <h3>🧰 Contraintes du chantier</h3>
-
-                    <div class="vc-field">
-                        <label for="vcAcces">Accès et emplacement</label>
-                        <textarea id="vcAcces"
-                            placeholder="Accès extérieur, hauteur, nacelle, passage des liaisons..."></textarea>
-                    </div>
-
-                    <div class="vc-field">
-                        <label for="vcElectricite">Alimentation électrique</label>
-                        <textarea id="vcElectricite"
-                            placeholder="Tableau, protection, alimentation disponible..."></textarea>
-                    </div>
-
-                    <div class="vc-field">
-                        <label for="vcPercements">Percements et passages</label>
-                        <textarea id="vcPercements"
-                            placeholder="Murs, dalles, gaines techniques, cheminement..."></textarea>
-                    </div>
-
-                    <div class="vc-field">
-                        <label for="vcAutres">Autres contraintes</label>
-                        <textarea id="vcAutres"
-                            placeholder="Voisinage, copropriété, esthétique, bruit..."></textarea>
-                    </div>
-                </div>
-
-                <div class="vc-card">
-                    <h3>💧 Gestion des condensats</h3>
-
-                    <div class="vc-field">
-                        <label for="vcCondensats">Évacuation envisagée</label>
-                        <select id="vcCondensats">
-                            <option value="">Non renseignée</option>
-                            <option value="Gravité">Évacuation gravitaire</option>
-                            <option value="Pompe de relevage">Pompe de relevage</option>
-                            <option value="À confirmer">À confirmer sur chantier</option>
-                        </select>
-                    </div>
-
-                    <div class="vc-field">
-                        <label for="vcPointEvacuation">Point d'évacuation</label>
-                        <input id="vcPointEvacuation" type="text"
-                               placeholder="Ex : évacuation salle de bain">
-                    </div>
-
-                    <div class="vc-field">
-                        <label for="vcAccessibilite">Accessibilité / cheminement</label>
-                        <textarea id="vcAccessibilite"
-                            placeholder="Distance, pente, passage, possibilité de raccordement..."></textarea>
-                    </div>
+                    </label>
 
                     <div class="vc-grid">
-                        <div class="vc-field">
-                            <label for="vcCoutPompe">Coût pompe (€)</label>
-                            <input id="vcCoutPompe" type="number"
-                                   min="0" step="0.01" inputmode="decimal"
-                                   placeholder="0">
-                        </div>
+                        <label class="vc-field">Marque
+                            <input id="vcMarque" type="text" placeholder="Facultatif">
+                        </label>
+                        <label class="vc-field">Modèle
+                            <input id="vcModele" type="text" placeholder="Facultatif">
+                        </label>
+                    </div>
 
-                        <div class="vc-field">
-                            <label for="vcCoutPose">Coût pose / matériel (€)</label>
-                            <input id="vcCoutPose" type="number"
-                                   min="0" step="0.01" inputmode="decimal"
-                                   placeholder="0">
-                        </div>
+                    <label class="vc-field">Puissance envisagée
+                        <input id="vcPuissance" type="text" placeholder="Ex. : 3,5 kW">
+                    </label>
+                </section>
+
+                <section class="vc-card">
+                    <h3>Pièces et dimensions</h3>
+                    <p style="font-size:12px;color:#64748b;margin-top:-5px">
+                        Renseigne les dimensions si elles sont disponibles.
+                        Les surfaces et volumes sont calculés automatiquement.
+                    </p>
+
+                    <div id="vcListePieces"></div>
+
+                    <button type="button" class="vc-button vc-secondary" id="vcAjouterPiece">
+                        + Ajouter une pièce
+                    </button>
+                </section>
+
+                <section class="vc-card">
+                    <h3>Accès et contraintes du chantier</h3>
+
+                    <label class="vc-field">Accès et emplacement
+                        <textarea id="vcAcces" placeholder="Ex. : 5e étage sans ascenseur..."></textarea>
+                    </label>
+
+                    <label class="vc-field">Alimentation électrique
+                        <textarea id="vcElectricite" placeholder="Ex. : Tableau électrique à remplacer..."></textarea>
+                    </label>
+
+                    <label class="vc-field">Percements et passages
+                        <textarea id="vcPercements" placeholder="Ex. : Passage en façade, traversée de mur..."></textarea>
+                    </label>
+
+                    <label class="vc-field">Autres contraintes
+                        <textarea id="vcContraintes" placeholder="Observations complémentaires..."></textarea>
+                    </label>
+                </section>
+
+                <section class="vc-card">
+                    <h3>Gestion des condensats</h3>
+
+                    <label class="vc-field">Évacuation
+                        <select id="vcCondensats">
+                            <option value="">Non renseigné</option>
+                            <option value="Évacuation gravitaire">Évacuation gravitaire</option>
+                            <option value="Pompe de relevage">Pompe de relevage</option>
+                            <option value="À confirmer">À confirmer</option>
+                        </select>
+                    </label>
+
+                    <label class="vc-field">Point d'évacuation
+                        <input id="vcPointEvacuation" type="text" placeholder="Ex. : Évacuation eaux usées">
+                    </label>
+
+                    <div class="vc-grid">
+                        <label class="vc-field">Coût matériel (€)
+                            <input id="vcCoutMateriel" type="number" min="0" step="0.01" placeholder="0">
+                        </label>
+                        <label class="vc-field">Coût pose (€)
+                            <input id="vcCoutPose" type="number" min="0" step="0.01" placeholder="0">
+                        </label>
                     </div>
 
                     <div class="vc-total" id="vcTotalCondensats">
-                        Coût complémentaire : 0,00 €
+                        Total condensats : 0,00 €
                     </div>
-                </div>
+                </section>
 
-                <div class="vc-card">
-                    <h3>📝 Notes complémentaires</h3>
+                <section class="vc-card">
+                    <h3>Notes complémentaires</h3>
+                    <label class="vc-field">Observations
+                        <textarea id="vcNotes" placeholder="Notes libres sur le chantier..."></textarea>
+                    </label>
+                </section>
 
-                    <div class="vc-field">
-                        <label for="vcNotes">Notes libres</label>
-                        <textarea id="vcNotes"
-                            placeholder="Informations utiles pour préparer le devis et l'intervention..."></textarea>
-                    </div>
-                </div>
+                <button type="button" class="vc-button vc-primary" id="vcCreerPDF">
+                    📄 Créer le PDF
+                </button>
 
-                <div class="vc-card">
-                    <h3>📄 Dossier client</h3>
-                    <p class="vc-note">
-                        Le dossier reprendra les informations renseignées,
-                        les résultats de l'étude disponibles et le budget
-                        estimatif s'il a été calculé.
-                    </p>
-
-                    <button type="button" class="vc-button vc-primary"
-                            id="vcCreerPDF">
-                        📄 Créer le PDF
-                    </button>
-
-                    <button type="button" class="vc-button vc-secondary"
-                            id="vcFermerBas">
-                        Fermer la visite
-                    </button>
-                </div>
-
+                <button type="button" class="vc-button vc-secondary" id="vcFermer">
+                    Fermer la visite
+                </button>
             </div>
         `;
 
         document.body.appendChild(overlay);
 
-        document.getElementById("vcFermer").addEventListener("click", fermer);
-        document.getElementById("vcFermerBas").addEventListener("click", fermer);
-        document.getElementById("vcCreerPDF").addEventListener("click", creerPDF);
+        const apercu = document.createElement("div");
+        apercu.id = "vcApercu";
+        apercu.innerHTML = `
+            <div class="vc-preview-bar">
+                <p>
+                    Vérifie ton dossier avant de lancer l'impression.
+                    Sur iPhone, tu pourras ensuite utiliser le partage
+                    pour enregistrer le document en PDF.
+                </p>
+                <button type="button" class="vc-button vc-primary" id="vcImprimer">
+                    🖨️ Imprimer / Enregistrer en PDF
+                </button>
+                <button type="button" class="vc-button vc-secondary" id="vcRetour">
+                    Retour à la visite
+                </button>
+            </div>
+            <article class="vc-document" id="vcDocument"></article>
+        `;
 
-        ["vcCoutPompe", "vcCoutPose"].forEach(id => {
-            document.getElementById(id).addEventListener("input", actualiserTotal);
+        document.body.appendChild(apercu);
+
+        $("vcDate").value = dateDuJour();
+
+        $("vcAjouterPiece").addEventListener("click", ajouterPiece);
+        $("vcFermer").addEventListener("click", fermer);
+        $("vcCreerPDF").addEventListener("click", creerApercu);
+        $("vcImprimer").addEventListener("click", imprimer);
+        $("vcRetour").addEventListener("click", () => {
+            apercu.classList.remove("vc-visible");
         });
 
-        document.getElementById("vcDate").value =
-            new Date().toISOString().slice(0, 10);
+        $("vcCoutMateriel").addEventListener("input", actualiserTotal);
+        $("vcCoutPose").addEventListener("input", actualiserTotal);
+
+        ajouterPieceDepuisEtude();
     }
 
-    function ouvrir() {
-        const overlay = document.getElementById("visiteOverlay");
-        overlay.classList.add("active");
-        document.body.style.overflow = "hidden";
+    function ajouterPieceDepuisEtude() {
+        let piecesExistantes = [];
 
-        recupererPiecesEtude();
-        recupererTypeInstallation();
-    }
+        try {
+            if (window.PROCLIM && typeof window.PROCLIM.getRooms === "function") {
+                piecesExistantes = window.PROCLIM.getRooms() || [];
+            }
+        } catch (erreur) {
+            console.warn("Pro Clim : lecture des pièces impossible.", erreur);
+        }
 
-    function fermer() {
-        document.getElementById("visiteOverlay").classList.remove("active");
-        document.body.style.overflow = "";
-    }
-
-    function recupererTypeInstallation() {
-        const type = window.PROCLIM?.getTypeInstallation?.();
-
-        const correspondance = {
-            split: "Split mural",
-            multisplit: "Multi-split",
-            gainable: "Gainable"
-        };
-
-        const champ = document.getElementById("vcType");
-
-        if (type && correspondance[type] && !champ.value) {
-            champ.value = correspondance[type];
+        if (piecesExistantes.length) {
+            piecesExistantes.forEach((piece) => {
+                ajouterPiece({
+                    nom: piece.nom || "",
+                    longueur: piece.longueur || "",
+                    largeur: piece.largeur || "",
+                    hauteur: piece.hauteur || ""
+                });
+            });
+        } else {
+            ajouterPiece();
         }
     }
 
-    function recupererPiecesEtude() {
-        const conteneur = document.getElementById("vcPieces");
-        const pieces = window.PROCLIM?.getRooms?.() || [];
+    function ajouterPiece(donnees = {}) {
+        numeroPiece++;
 
-        if (!pieces.length) return;
+        const id = numeroPiece;
+        const conteneur = document.createElement("div");
+        conteneur.className = "vc-piece";
+        conteneur.dataset.pieceId = id;
 
-        conteneur.innerHTML = "";
+        conteneur.innerHTML = `
+            <h4>Pièce ${id}</h4>
 
-        pieces.forEach((piece, index) => {
-            const bloc = document.createElement("div");
-            bloc.className = "vc-room";
+            <label class="vc-field">Nom de la pièce
+                <input class="vc-nom-piece" type="text"
+                    placeholder="Ex. : Salon"
+                    value="${echapper(donnees.nom || "")}">
+            </label>
 
-            const titre = document.createElement("strong");
-            titre.textContent = piece.nom || `Pièce ${index + 1}`;
-            bloc.appendChild(titre);
+            <div class="vc-grid">
+                <label class="vc-field">Longueur (m)
+                    <input class="vc-longueur" type="number" min="0" step="0.01"
+                        placeholder="0"
+                        value="${echapper(donnees.longueur || "")}">
+                </label>
 
-            const dimensions = document.createElement("p");
-            dimensions.textContent =
-                `${piece.longueur} m × ${piece.largeur} m × ${piece.hauteur} m`;
-            bloc.appendChild(dimensions);
+                <label class="vc-field">Largeur (m)
+                    <input class="vc-largeur" type="number" min="0" step="0.01"
+                        placeholder="0"
+                        value="${echapper(donnees.largeur || "")}">
+                </label>
 
-            const surface = Number(piece.longueur) * Number(piece.largeur);
-            const volume = surface * Number(piece.hauteur);
+                <label class="vc-field">Hauteur (m)
+                    <input class="vc-hauteur" type="number" min="0" step="0.01"
+                        placeholder="2,50"
+                        value="${echapper(donnees.hauteur || "")}">
+                </label>
+            </div>
 
-            const detail = document.createElement("p");
-            detail.className = "vc-note";
-            detail.textContent =
-                `Surface : ${surface.toFixed(1)} m² — Volume : ${volume.toFixed(1)} m³`;
-            bloc.appendChild(detail);
+            <div class="vc-piece-result">Surface : — | Volume : —</div>
 
-            const label = document.createElement("label");
-            label.textContent = "Observation pour cette pièce";
+            <label class="vc-field">Observation sur cette pièce
+                <textarea class="vc-observation"
+                    placeholder="Emplacement, contraintes, remarques..."></textarea>
+            </label>
 
-            const textarea = document.createElement("textarea");
-            textarea.className = "vc-note-piece";
-            textarea.dataset.nom = piece.nom || `Pièce ${index + 1}`;
-            textarea.placeholder = "Emplacement, contraintes, remarques...";
-            textarea.style.width = "100%";
-            textarea.style.boxSizing = "border-box";
-            textarea.style.marginTop = "7px";
-            textarea.style.padding = "10px";
-            textarea.style.border = "1px solid #ccd5e0";
-            textarea.style.borderRadius = "8px";
-            textarea.style.fontSize = "15px";
+            <button type="button" class="vc-button vc-danger vc-supprimer-piece">
+                Supprimer cette pièce
+            </button>
+        `;
 
-            bloc.appendChild(label);
-            bloc.appendChild(textarea);
-            conteneur.appendChild(bloc);
+        $("vcListePieces").appendChild(conteneur);
+
+        conteneur.querySelectorAll("input").forEach((champ) => {
+            champ.addEventListener("input", () => calculerPiece(conteneur));
+        });
+
+        conteneur.querySelector(".vc-supprimer-piece").addEventListener("click", () => {
+            conteneur.remove();
+            renumeroterPieces();
+        });
+
+        calculerPiece(conteneur);
+    }
+
+    function calculerPiece(element) {
+        const longueur = Number(element.querySelector(".vc-longueur").value) || 0;
+        const largeur = Number(element.querySelector(".vc-largeur").value) || 0;
+        const hauteur = Number(element.querySelector(".vc-hauteur").value) || 0;
+
+        const surface = longueur > 0 && largeur > 0 ? longueur * largeur : 0;
+        const volume = surface > 0 && hauteur > 0 ? surface * hauteur : 0;
+
+        const resultat = element.querySelector(".vc-piece-result");
+
+        resultat.textContent =
+            `Surface : ${surface ? surface.toFixed(1) + " m²" : "—"} | ` +
+            `Volume : ${volume ? volume.toFixed(1) + " m³" : "—"}`;
+    }
+
+    function renumeroterPieces() {
+        document.querySelectorAll("#vcListePieces .vc-piece").forEach((element, index) => {
+            element.querySelector("h4").textContent = `Pièce ${index + 1}`;
         });
     }
 
-    function valeur(id) {
-        return document.getElementById(id)?.value?.trim() || "";
-    }
+    function lirePieces() {
+        return Array.from(document.querySelectorAll("#vcListePieces .vc-piece"))
+            .map((element) => {
+                const longueur = Number(element.querySelector(".vc-longueur").value) || 0;
+                const largeur = Number(element.querySelector(".vc-largeur").value) || 0;
+                const hauteur = Number(element.querySelector(".vc-hauteur").value) || 0;
 
-    function montant(id) {
-        const n = Number(valeur(id).replace(",", "."));
-        return Number.isFinite(n) && n > 0 ? n : 0;
+                const surface = longueur > 0 && largeur > 0
+                    ? longueur * largeur : 0;
+
+                const volume = surface > 0 && hauteur > 0
+                    ? surface * hauteur : 0;
+
+                return {
+                    nom: element.querySelector(".vc-nom-piece").value.trim(),
+                    longueur,
+                    largeur,
+                    hauteur,
+                    surface,
+                    volume,
+                    observation: element.querySelector(".vc-observation").value.trim()
+                };
+            })
+            .filter((piece) =>
+                piece.nom || piece.longueur || piece.largeur ||
+                piece.hauteur || piece.observation
+            );
     }
 
     function actualiserTotal() {
-        const total = montant("vcCoutPompe") + montant("vcCoutPose");
-
-        document.getElementById("vcTotalCondensats").textContent =
-            `Coût complémentaire : ${total.toLocaleString("fr-FR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            })} €`;
+        const total = nombre("vcCoutMateriel") + nombre("vcCoutPose");
+        $("vcTotalCondensats").textContent =
+            `Total condensats : ${euros(total)}`;
     }
 
     function lireEtude() {
-        const lire = id =>
-            document.getElementById(id)?.textContent?.trim() || "";
+        const resultats = [];
 
-        return {
-            surface: lire("resSurface"),
-            volume: lire("resVolume"),
-            puissance: lire("resPuissance"),
-            debit: lire("resDebit"),
-            bouches: lire("resBouches"),
-            diametre: lire("resDiametre"),
-            solution: lire("resSplit") || lire("resGainable"),
-            commentaires: lire("commentaires")
-        };
-    }
-
-    function lireBudget() {
-        const ids = [
-            "budgetTotalHeures",
-            "budgetCoutMainOeuvre",
-            "budgetCoutBase",
-            "budgetPrixHT",
-            "budgetMontantTVA",
-            "budgetPrixTTC"
+        const correspondances = [
+            ["Surface", ["surfaceTotale", "resultatSurface", "surface"]],
+            ["Volume", ["volumeTotal", "resultatVolume", "volume"]],
+            ["Puissance", ["puissanceTotale", "resultatPuissance", "puissance"]],
+            ["Solution", ["solutionRecommandee", "resultatSolution", "solution"]],
+            ["Débit", ["debitTotal", "resultatDebit", "debit"]],
+            ["Nombre de bouches", ["nombreBouches", "resultatBouches"]],
+            ["Diamètre", ["diametreGaine", "resultatDiametre"]]
         ];
 
-        const resultat = {};
-
-        ids.forEach(id => {
-            const element = document.getElementById(id);
-            if (element && element.textContent.trim()) {
-                resultat[id] = element.textContent.trim();
+        correspondances.forEach(([label, ids]) => {
+            for (const id of ids) {
+                const element = $(id);
+                if (element && element.textContent.trim()) {
+                    const texte = element.textContent.trim();
+                    if (texte !== "—" && texte !== "-") {
+                        resultats.push({ label, valeur: texte });
+                        break;
+                    }
+                }
             }
         });
 
-        return resultat;
+        return resultats;
     }
 
-    function creerPDF() {
+    function lireBudget() {
+        const correspondances = [
+            ["Temps estimé", "budgetTotalHeures"],
+            ["Main-d'œuvre", "budgetCoutMainOeuvre"],
+            ["Coût de base", "budgetCoutBase"],
+            ["Prix HT", "budgetPrixHT"],
+            ["TVA", "budgetMontantTVA"],
+            ["Prix TTC", "budgetPrixTTC"]
+        ];
+
+        return correspondances
+            .map(([label, id]) => {
+                const element = $(id);
+                return {
+                    label,
+                    valeur: element ? element.textContent.trim() : ""
+                };
+            })
+            .filter((item) =>
+                item.valeur &&
+                item.valeur !== "—" &&
+                item.valeur !== "-"
+            );
+    }
+
+    function ligneDocument(label, texte) {
+        if (!texte) return "";
+        return `
+            <div class="vc-doc-line">
+                <span class="vc-doc-label">${echapper(label)} :</span>
+                ${echapper(texte)}
+            </div>
+        `;
+    }
+
+    function blocTexte(titre, contenu) {
+        if (!contenu) return "";
+        return `
+            <h2>${echapper(titre)}</h2>
+            <p>${echapper(contenu).replace(/\n/g, "<br>")}</p>
+        `;
+    }
+
+    function creerApercu() {
+        const client = valeur("vcClient");
+        const adresse = valeur("vcAdresse");
+        const telephone = valeur("vcTelephone");
+        const projet = valeur("vcProjet");
+        const date = dateFr(valeur("vcDate"));
+        const type = valeur("vcType");
+        const marque = valeur("vcMarque");
+        const modele = valeur("vcModele");
+        const puissance = valeur("vcPuissance");
+
+        const piecesVisite = lirePieces();
         const etude = lireEtude();
         const budget = lireBudget();
 
-        const observationsPieces = Array.from(
-            document.querySelectorAll(".vc-note-piece")
-        ).map(champ => ({
-            nom: champ.dataset.nom,
-            note: champ.value.trim()
-        })).filter(piece => piece.note);
+        const condensats = valeur("vcCondensats");
+        const pointEvacuation = valeur("vcPointEvacuation");
+        const coutMateriel = nombre("vcCoutMateriel");
+        const coutPose = nombre("vcCoutPose");
+        const totalCondensats = coutMateriel + coutPose;
 
-        const coutCondensats =
-            montant("vcCoutPompe") + montant("vcCoutPose");
+        let html = `
+            <h1>❄️ Pro Clim</h1>
+            <p class="vc-doc-subtitle">Compte rendu de visite chantier</p>
 
-        const donnees = {
-            client: valeur("vcClient"),
-            adresse: valeur("vcAdresse"),
-            telephone: valeur("vcTelephone"),
-            date: valeur("vcDate"),
-            projet: valeur("vcProjet"),
-            type: valeur("vcType"),
-            marque: valeur("vcMarque"),
-            modele: valeur("vcModele"),
-            puissance: valeur("vcPuissance"),
-            observations: valeur("vcObservations"),
-            acces: valeur("vcAcces"),
-            electricite: valeur("vcElectricite"),
-            percements: valeur("vcPercements"),
-            autres: valeur("vcAutres"),
-            condensats: valeur("vcCondensats"),
-            pointEvacuation: valeur("vcPointEvacuation"),
-            accessibilite: valeur("vcAccessibilite"),
-            coutPompe: montant("vcCoutPompe"),
-            coutPose: montant("vcCoutPose"),
-            coutCondensats,
-            notes: valeur("vcNotes"),
-            observationsPieces,
-            etude,
-            budget
-        };
+            <h2>Informations du projet</h2>
+            ${ligneDocument("Client", client)}
+            ${ligneDocument("Adresse", adresse)}
+            ${ligneDocument("Téléphone", telephone)}
+            ${ligneDocument("Date de visite", date)}
+            ${ligneDocument("Projet", projet)}
 
-        const html = construireDocument(donnees);
+            <h2>Installation envisagée</h2>
+            ${ligneDocument("Type", type)}
+            ${ligneDocument("Marque", marque)}
+            ${ligneDocument("Modèle", modele)}
+            ${ligneDocument("Puissance", puissance)}
+        `;
 
-        const fenetre = window.open("", "_blank");
+        if (piecesVisite.length) {
+            html += `<h2>Pièces et dimensions</h2>`;
 
-        if (!fenetre) {
+            piecesVisite.forEach((piece, index) => {
+                const nom = piece.nom || `Pièce ${index + 1}`;
+
+                html += `
+                    <div class="vc-doc-room">
+                        <strong>${echapper(nom)}</strong>
+                        ${piece.longueur ? `<p>Longueur : ${piece.longueur} m</p>` : ""}
+                        ${piece.largeur ? `<p>Largeur : ${piece.largeur} m</p>` : ""}
+                        ${piece.hauteur ? `<p>Hauteur : ${piece.hauteur} m</p>` : ""}
+                        ${piece.surface ? `<p>Surface : ${piece.surface.toFixed(1)} m²</p>` : ""}
+                        ${piece.volume ? `<p>Volume : ${piece.volume.toFixed(1)} m³</p>` : ""}
+                        ${piece.observation ? `<p><strong>Observation :</strong><br>${echapper(piece.observation).replace(/\n/g, "<br>")}</p>` : ""}
+                    </div>
+                `;
+            });
+        }
+
+        html += blocTexte("Accès et emplacement", valeur("vcAcces"));
+        html += blocTexte("Alimentation électrique", valeur("vcElectricite"));
+        html += blocTexte("Percements et passages", valeur("vcPercements"));
+        html += blocTexte("Autres contraintes", valeur("vcContraintes"));
+
+        if (condensats || pointEvacuation || coutMateriel || coutPose) {
+            html += `<h2>Gestion des condensats</h2>`;
+            html += ligneDocument("Évacuation", condensats);
+            html += ligneDocument("Point d'évacuation", pointEvacuation);
+
+            if (coutMateriel) {
+                html += ligneDocument("Coût matériel", euros(coutMateriel));
+            }
+
+            if (coutPose) {
+                html += ligneDocument("Coût pose", euros(coutPose));
+            }
+
+            if (totalCondensats > 0) {
+                html += `
+                    <div class="vc-doc-total">
+                        Total estimé condensats : ${echapper(euros(totalCondensats))}
+                    </div>
+                `;
+            }
+        }
+
+        if (etude.length) {
+            html += `<h2>Résultats de l'étude Pro Clim</h2>`;
+            etude.forEach((item) => {
+                html += ligneDocument(item.label, item.valeur);
+            });
+        }
+
+        if (budget.length) {
+            html += `<h2>Estimation Budget Pro</h2>`;
+            budget.forEach((item) => {
+                html += ligneDocument(item.label, item.valeur);
+            });
+        }
+
+        html += blocTexte("Notes complémentaires", valeur("vcNotes"));
+
+        html += `
+            <div class="vc-doc-footer">
+                Document établi avec Pro Clim — Assistant du technicien CVC.
+                <br>
+                Les informations et estimations présentées sont basées
+                sur les éléments recueillis lors de la visite.
+            </div>
+        `;
+
+        dossierHTML = html;
+        $("vcDocument").innerHTML = html;
+        $("vcApercu").classList.add("vc-visible");
+    }
+
+    function imprimer() {
+        if (!dossierHTML) {
+            alert("Crée d'abord l'aperçu du dossier.");
+            return;
+        }
+
+        if (typeof window.print !== "function") {
             alert(
-                "Le navigateur a bloqué l'ouverture du dossier. " +
-                "Autorise les fenêtres contextuelles puis réessaie."
+                "L'impression n'est pas disponible dans cette fenêtre. " +
+                "Ouvre Pro Clim dans Safari pour imprimer le dossier."
             );
             return;
         }
 
-        fenetre.document.open();
-        fenetre.document.write(html);
-        fenetre.document.close();
+        window.print();
     }
 
-    function echapper(texte) {
-        return String(texte ?? "").replace(/[&<>"']/g, caractere => ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#039;"
-        })[caractere]);
+    function ouvrir() {
+        $("vcApercu").classList.remove("vc-visible");
+        $(ID_OVERLAY).classList.add("vc-visible");
     }
 
-    function ligne(titre, contenu) {
-        if (!contenu) return "";
-        return `<p><strong>${echapper(titre)} :</strong> ${echapper(contenu)}</p>`;
+    function fermer() {
+        $(ID_OVERLAY).classList.remove("vc-visible");
+        $("vcApercu").classList.remove("vc-visible");
     }
 
-    function bloc(titre, contenu) {
-        if (!contenu) return "";
-        return `
-            <section>
-                <h2>${echapper(titre)}</h2>
-                <p>${echapper(contenu).replace(/\n/g, "<br>")}</p>
-            </section>
+    function ajouterBoutonAccueil() {
+        if ($("btnVisiteChantier")) return;
+
+        const zone = document.querySelector("#pageAccueil .quick-grid");
+
+        if (!zone) {
+            console.warn("Pro Clim : zone des raccourcis introuvable.");
+            return;
+        }
+
+        const bouton = document.createElement("button");
+        bouton.id = "btnVisiteChantier";
+        bouton.type = "button";
+        bouton.innerHTML = `
+            🏠 Visite chantier
+            <small>Préparer un dossier client</small>
         `;
+
+        bouton.addEventListener("click", ouvrir);
+        zone.appendChild(bouton);
     }
 
-    function construireDocument(d) {
-        const e = d.etude;
-        const b = d.budget;
-
-        const pieces = d.observationsPieces.map(piece => `
-            <p><strong>${echapper(piece.nom)} :</strong>
-            ${echapper(piece.note)}</p>
-        `).join("");
-
-        const detailsEtude = [
-            ligne("Surface", e.surface),
-            ligne("Volume", e.volume),
-            ligne("Puissance estimée", e.puissance),
-            ligne("Solution calculée", e.solution),
-            ligne("Débit", e.debit),
-            ligne("Nombre de bouches", e.bouches),
-            ligne("Diamètre", e.diametre)
-        ].join("");
-
-        const detailsBudget = [
-            ligne("Temps total", b.budgetTotalHeures),
-            ligne("Main-d'œuvre", b.budgetCoutMainOeuvre),
-            ligne("Coût de base", b.budgetCoutBase),
-            ligne("Prix HT", b.budgetPrixHT),
-            ligne("TVA", b.budgetMontantTVA),
-            ligne("Prix TTC estimatif", b.budgetPrixTTC)
-        ].join("");
-
-        const condensats = [
-            ligne("Évacuation", d.condensats),
-            ligne("Point d'évacuation", d.pointEvacuation),
-            ligne("Accessibilité", d.accessibilite),
-            ligne("Coût pompe", d.coutPompe ? `${d.coutPompe.toFixed(2)} €` : ""),
-            ligne("Pose / matériel", d.coutPose ? `${d.coutPose.toFixed(2)} €` : ""),
-            ligne("Total complémentaire", d.coutCondensats
-                ? `${d.coutCondensats.toFixed(2)} €` : "")
-        ].join("");
-
-        const date = d.date
-            ? new Date(`${d.date}T12:00:00`).toLocaleDateString("fr-FR")
-            : "";
-
-        return `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dossier visite chantier — Pro Clim</title>
-<style>
-    * { box-sizing: border-box; }
-    body {
-        font-family: Arial, sans-serif;
-        color: #243247;
-        margin: 0;
-        padding: 25px;
-        line-height: 1.5;
+    function initialiser() {
+        ajouterStyles();
+        creerInterface();
+        ajouterBoutonAccueil();
     }
-    header {
-        border-bottom: 4px solid #0d47a1;
-        padding-bottom: 15px;
-        margin-bottom: 25px;
-    }
-    h1 { color: #0d47a1; margin: 0; font-size: 27px; }
-    header p { margin: 5px 0 0; color: #64748b; }
-    h2 {
-        color: #0d47a1;
-        font-size: 17px;
-        border-bottom: 1px solid #dce5f1;
-        padding-bottom: 6px;
-        margin-top: 25px;
-    }
-    section { page-break-inside: avoid; }
-    .intro {
-        background: #f1f5fb;
-        padding: 14px;
-        border-radius: 8px;
-    }
-    p { margin: 7px 0; }
-    .footer {
-        border-top: 1px solid #dce5f1;
-        margin-top: 35px;
-        padding-top: 10px;
-        color: #64748b;
-        font-size: 11px;
-    }
-    .actions {
-        max-width: 700px;
-        margin: 0 auto 20px;
-        display: flex;
-        gap: 10px;
-    }
-    .actions button {
-        flex: 1;
-        border: 0;
-        border-radius: 8px;
-        padding: 13px;
-        background: #0d47a1;
-        color: white;
-        font-size: 15px;
-        font-weight: bold;
-    }
-    @media print {
-        body { padding: 0; }
-        .actions { display: none; }
-    }
-</style>
-</head>
-<body>
 
-<div class="actions">
-    <button onclick="window.print()">Imprimer / Enregistrer en PDF</button>
-</div>
-
-<header>
-    <h1>PRO CLIM</h1>
-    <p>Assistant du technicien CVC</p>
-    <h2>Dossier de visite chantier</h2>
-</header>
-
-<div class="intro">
-    ${ligne("Client", d.client)}
-    ${ligne("Adresse", d.adresse)}
-    ${ligne("Téléphone", d.telephone)}
-    ${ligne("Date de visite", date)}
-    ${ligne("Projet", d.projet)}
-</div>
-
-<section>
-    <h2>Installation envisagée</h2>
-    ${ligne("Type", d.type)}
-    ${ligne("Marque", d.marque)}
-    ${ligne("Modèle", d.modele)}
-    ${ligne("Puissance indiquée", d.puissance)}
-</section>
-
-${detailsEtude ? `<section><h2>Résultats de l'étude Pro Clim</h2>${detailsEtude}</section>` : ""}
-
-${pieces ? `<section><h2>Observations par pièce</h2>${pieces}</section>` : ""}
-
-${bloc("Observations générales", d.observations)}
-${bloc("Accès et emplacement", d.acces)}
-${bloc("Alimentation électrique", d.electricite)}
-${bloc("Percements et passages", d.percements)}
-${bloc("Autres contraintes", d.autres)}
-
-${condensats ? `<section><h2>Gestion des condensats</h2>${condensats}</section>` : ""}
-
-${detailsBudget ? `<section><h2>Budget Pro — Estimation disponible</h2>${detailsBudget}</section>` : ""}
-
-${bloc("Notes complémentaires", d.notes)}
-
-${e.commentaires ? bloc("Commentaires de l'étude", e.commentaires) : ""}
-
-<div class="footer">
-    Document préparé avec Pro Clim — Assistant du technicien CVC.<br>
-    Les puissances et montants présentés sont des éléments d'étude et d'estimation,
-    à confirmer selon les caractéristiques réelles du chantier et le matériel retenu.
-</div>
-
-</body>
-</html>`;
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initialiser);
+    } else {
+        initialiser();
     }
 
 })();
