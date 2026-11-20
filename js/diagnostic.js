@@ -1,7 +1,7 @@
 
 /* ==========================================================
    PRO CLIM — DIAGNOSTIC CVC + CONTROLE COMPOSANTS
-   Version multimarque + analyse des codes défauts
+   Version terrain : diagnostic rapide et décisionnel
    ========================================================== */
 (() => {
   "use strict";
@@ -13,7 +13,12 @@
     "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
   }[c]));
 
-  const S = { symptom:"", step:0, answers:[] };
+  const S = {
+    symptom:"",
+    step:0,
+    answers:[],
+    fault:null
+  };
 
   const BRANDS = [
     "Daikin", "Mitsubishi Electric", "Mitsubishi Heavy Industries",
@@ -150,6 +155,16 @@
       #${PAGE} .pcd-good{background:#ecfdf5;color:#166534}
       #${PAGE} .pcd-actions{display:flex;gap:8px}
       #${PAGE} .pcd-actions>*{flex:1}
+      #${PAGE} .pcd-fault-code{font-size:30px;font-weight:900;color:#b91c1c;margin:2px 0}
+      #${PAGE} .pcd-fault-step{border:1px solid #cbd5e1;border-left:5px solid #0D47A1;border-radius:12px;padding:15px;margin:12px 0;background:#f8fafc}
+      #${PAGE} .pcd-fault-step h4{font-size:18px;margin:5px 0 10px}
+      #${PAGE} .pcd-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}
+      #${PAGE} .pcd-choice button{border:0;border-radius:10px;padding:15px 8px;font-weight:900;font-size:15px;cursor:pointer}
+      #${PAGE} .pcd-choice .ok{background:#dcfce7;color:#166534}
+      #${PAGE} .pcd-choice .ko{background:#fee2e2;color:#991b1b}
+      #${PAGE} .pcd-progress{height:7px;background:#e2e8f0;border-radius:10px;overflow:hidden;margin:10px 0}
+      #${PAGE} .pcd-progress span{display:block;height:100%;background:#0D47A1}
+      #${PAGE} .pcd-small{font-size:12px;color:#64748b}
       @media(max-width:520px){#${PAGE} .pcd-grid{grid-template-columns:1fr 1fr}}
     `;
     document.head.appendChild(st);
@@ -205,7 +220,7 @@
             </label>
 
             <button class="pcd-btn pcd-primary" data-action="analyze-code">
-              🔎 Analyser le code défaut
+              🔎 Lancer le diagnostic
             </button>
 
             <div id="pcdResultatCode" aria-live="polite"></div>
@@ -230,7 +245,55 @@
     return true;
   }
 
-  // ANALYSE DU CODE DEFAUT
+  // BASE DE PARCOURS VERIFIEE POUR LE TEST DAIKIN U4-00
+  function getFaultProcedure(marque, modele, code){
+    if(marque === "Daikin" && (code === "U4" || code === "U4-00")){
+      const normalized = modele.toUpperCase().replace(/\s+/g,"");
+      const exactModel =
+        normalized.includes("FTXF25A") &&
+        normalized.includes("RXF25A");
+
+      return {
+        title:"Défaut de communication unité intérieure / extérieure",
+        code:"U4-00",
+        modelVerified:exactModel,
+        source:exactModel
+          ? "Daikin ESIE18-12F — § 2.5.29 — gamme FTXF/RXF concernée"
+          : "Procédure indicative Daikin U4 — manuel exact à confirmer",
+        intro:exactModel
+          ? "Le manuel de service identifie un défaut de communication entre les unités. Suis les contrôles dans l'ordre."
+          : "U4 est associé à un défaut de communication sur plusieurs gammes Daikin. La procédure et les valeurs doivent être confirmées pour cette référence.",
+        steps:[
+          {
+            title:"Contrôler l'alimentation électrique",
+            instruction:"Vérifier l'alimentation des unités intérieure et extérieure, les protections et les connexions conformément au schéma électrique.",
+            detail:exactModel
+              ? "Le manuel de cette gamme demande de vérifier la conformité de l'alimentation. La plage nominale indiquée est de ±4 %."
+              : "Pas de valeur universelle : utiliser la tension nominale et les tolérances du manuel correspondant à cette machine.",
+            anomaly:"Une alimentation absente, instable ou hors tolérance peut empêcher la communication. Rechercher la cause côté alimentation et protection avant de poursuivre.",
+            next:"Corriger l'anomalie d'alimentation, puis remettre en service selon la procédure constructeur et vérifier si U4 réapparaît."
+          },
+          {
+            title:"Contrôler la liaison entre les unités",
+            instruction:"Vérifier le câble inter-unités, les borniers, les connexions, le serrage et le raccordement selon le schéma de la machine.",
+            detail:"Toute vérification de continuité ou d'isolement doit respecter la procédure constructeur et être réalisée hors tension lorsque requis.",
+            anomaly:"Une erreur de raccordement, un conducteur coupé ou une connexion défectueuse peut interrompre la communication.",
+            next:"Corriger le câblage ou la connexion en suivant le schéma, puis refaire un essai de fonctionnement."
+          },
+          {
+            title:"Contrôler la carte électronique principale",
+            instruction:"Si alimentation et liaison sont conformes, suivre les contrôles de carte prescrits dans le manuel de service.",
+            detail:"Relever les voyants, états de diagnostic, connecteurs et mesures prévues par le constructeur. Ne pas remplacer une carte sur le seul code U4.",
+            anomaly:"Un défaut de carte ne peut être retenu qu'après élimination des causes externes et confirmation par les contrôles du manuel.",
+            next:"Comparer les résultats à l'arbre constructeur avant toute décision de remplacement."
+          }
+        ]
+      };
+    }
+
+    return null;
+  }
+
   function analyzeFault(){
     const marque = $("pcdMarque").value.trim();
     const modele = $("pcdModele").value.trim();
@@ -242,105 +305,232 @@
     if(!marque || !code){
       out.innerHTML = `
         <div class="pcd-alert">
-          Sélectionne une marque et renseigne un code défaut.
+          Sélectionne une marque et renseigne le code défaut.
         </div>`;
       return;
     }
 
-    let diagnostic = "";
+    const procedure = getFaultProcedure(marque,modele,code);
 
-    if(
-      marque === "Daikin" &&
-      (code === "U4" || code === "U4-00")
-    ){
-      diagnostic = `
-        <div class="pcd-result">
-          <h3>Défaut de communication suspecté</h3>
-
-          <p>
-            Sur plusieurs gammes Daikin, U4 correspond à
-            un défaut de communication entre unités.
-            La signification et la procédure exactes doivent
-            être confirmées avec la documentation du modèle.
-          </p>
-
-          <h4>Contrôles à effectuer dans l'ordre</h4>
-
-          <ol>
-            <li>
-              <strong>Identifier les unités :</strong>
-              relever les références complètes intérieure et extérieure.
-            </li>
-            <li>
-              <strong>Vérifier l'alimentation :</strong>
-              contrôler les alimentations et protections des unités
-              selon le schéma électrique.
-            </li>
-            <li>
-              <strong>Contrôler la liaison :</strong>
-              inspecter le câble de communication, les borniers,
-              les connexions, le serrage et les éventuelles inversions.
-            </li>
-            <li>
-              <strong>Rechercher une anomalie de câblage :</strong>
-              contrôler continuité et isolement uniquement selon
-              la procédure constructeur et hors tension lorsque requis.
-            </li>
-            <li>
-              <strong>Observer les cartes :</strong>
-              relever les voyants et états de diagnostic des cartes
-              intérieure et extérieure.
-            </li>
-            <li>
-              <strong>Confirmer avant remplacement :</strong>
-              suivre l'arbre de dépannage du manuel correspondant
-              à la référence exacte.
-            </li>
-          </ol>
-
+    if(!procedure){
+      S.fault = null;
+      out.innerHTML = `
+        <section class="pcd-card">
+          <div class="pcd-fault-code">${esc(code)}</div>
+          <h3>Code non encore référencé</h3>
+          <p><strong>${esc(marque)}</strong> · ${esc(modele || "Modèle non renseigné")}</p>
           <div class="pcd-alert">
-            Ne condamne pas une carte électronique sur le seul code U4.
-            Le câblage, l'alimentation et les connexions doivent être
-            contrôlés avant toute conclusion.
+            Ce code n'est pas encore présent dans la base vérifiée de Pro Clim pour cette marque et cette gamme.
+            Je préfère ne pas inventer sa signification ni te faire perdre du temps avec des contrôles non pertinents.
           </div>
-        </div>`;
-    } else {
-      diagnostic = `
-        <div class="pcd-alert">
-          Ce code n'est pas encore présent dans la base de diagnostic
-          vérifiée de Pro Clim pour cette marque.
-          Il faut consulter la documentation correspondant au modèle exact.
-          Aucune signification ne sera inventée.
-        </div>`;
+          <p class="pcd-muted">Il faut la documentation correspondant à la référence exacte de l'unité concernée.</p>
+        </section>`;
+      out.scrollIntoView({behavior:"smooth",block:"start"});
+      return;
     }
+
+    S.fault = {
+      procedure,
+      marque,
+      modele,
+      type,
+      code,
+      contexte,
+      step:0,
+      history:[],
+      branch:null
+    };
+
+    renderFaultStep();
+    out.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function renderFaultStep(){
+    const f = S.fault;
+    if(!f) return;
+
+    const out = $("pcdResultatCode");
+    const p = f.procedure;
+    const step = p.steps[f.step];
+    const progress = Math.round((f.step / p.steps.length) * 100);
 
     out.innerHTML = `
       <section class="pcd-card">
-        <h3>Résultat de l'analyse</h3>
+        <div class="pcd-fault-code">${esc(f.code)}</div>
+        <h3>${esc(p.title)}</h3>
+        <p class="pcd-muted">${esc(f.marque)} · ${esc(f.modele || "Modèle non renseigné")} · ${esc(f.type || "Type non renseigné")}</p>
 
-        <p><strong>Marque :</strong> ${esc(marque)}</p>
-        <p><strong>Modèle :</strong> ${esc(modele || "Non renseigné")}</p>
-        <p><strong>Installation :</strong> ${esc(type || "Non renseignée")}</p>
-        <p><strong>Code :</strong> ${esc(code)}</p>
+        <div class="pcd-alert">
+          ${esc(p.intro)}
+        </div>
 
-        ${diagnostic}
+        <div class="pcd-progress"><span style="width:${progress}%"></span></div>
+        <p class="pcd-small">Contrôle ${f.step+1} sur ${p.steps.length}</p>
 
-        ${modele ? "" : `
-          <div class="pcd-alert">
-            <strong>Attention :</strong> renseigne la référence exacte
-            de l'unité intérieure et extérieure pour confirmer
-            la signification du défaut et obtenir la bonne procédure.
-          </div>
-        `}
+        <div class="pcd-fault-step">
+          <p class="pcd-small"><strong>À FAIRE MAINTENANT</strong></p>
+          <h4>${esc(step.title)}</h4>
+          <p>${esc(step.instruction)}</p>
+          <p class="pcd-muted">${esc(step.detail)}</p>
+        </div>
 
-        ${contexte ? `<p><strong>Contexte :</strong> ${esc(contexte)}</p>` : ""}
+        <p><strong>Résultat du contrôle :</strong></p>
+        <div class="pcd-choice">
+          <button class="ok" data-action="fault-ok">✓ Conforme</button>
+          <button class="ko" data-action="fault-ko">✕ Anomalie</button>
+        </div>
 
-        <p class="pcd-muted">
-          Analyse indicative. La documentation constructeur de la
-          référence exacte reste indispensable.
-        </p>
+        <p class="pcd-small">Choisis uniquement après avoir effectué le contrôle. Pro Clim adaptera la suite.</p>
+
+        <button class="pcd-btn pcd-secondary" data-action="fault-reset">Recommencer ce diagnostic</button>
+        <p class="pcd-small"><strong>Source :</strong> ${esc(p.source)}</p>
+        ${f.contexte ? `<p class="pcd-small"><strong>Contexte :</strong> ${esc(f.contexte)}</p>` : ""}
       </section>`;
-    out.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function faultConform(){
+    const f = S.fault;
+    if(!f) return;
+
+    const step = f.procedure.steps[f.step];
+    f.history.push({
+      title:step.title,
+      result:"Conforme"
+    });
+
+    if(f.step < f.procedure.steps.length-1){
+      f.step++;
+      renderFaultStep();
+      $("pcdResultatCode").scrollIntoView({behavior:"smooth",block:"start"});
+      return;
+    }
+
+    renderFaultConclusion();
+  }
+
+  function faultAnomaly(){
+    const f = S.fault;
+    if(!f) return;
+
+    const step = f.procedure.steps[f.step];
+    f.history.push({
+      title:step.title,
+      result:"Anomalie"
+    });
+
+    f.branch = step;
+    renderFaultBranch();
+  }
+
+  function renderFaultBranch(){
+    const f = S.fault;
+    if(!f || !f.branch) return;
+
+    const step = f.branch;
+
+    $("pcdResultatCode").innerHTML = `
+      <section class="pcd-card">
+        <div class="pcd-fault-code">${esc(f.code)}</div>
+        <div class="pcd-alert">
+          <strong>Anomalie détectée</strong><br>
+          Le parcours normal est interrompu. On traite d'abord cette anomalie.
+        </div>
+
+        <h3>${esc(step.title)}</h3>
+        <h4>Orientation de recherche</h4>
+        <p>${esc(step.anomaly)}</p>
+
+        <div class="pcd-fault-step">
+          <strong>Prochaine action</strong>
+          <p>${esc(step.next)}</p>
+        </div>
+
+        <label class="pcd-field">Précision / mesure relevée
+          <textarea id="pcdFaultObservation" placeholder="Ex. tension mesurée, borne concernée, conducteur coupé..."></textarea>
+        </label>
+
+        <button class="pcd-btn pcd-primary" data-action="fault-resolved">
+          Anomalie corrigée / contrôle à refaire
+        </button>
+        <button class="pcd-btn pcd-secondary" data-action="fault-unresolved">
+          Anomalie toujours présente
+        </button>
+      </section>`;
+    $("pcdResultatCode").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function faultResolved(){
+    const f = S.fault;
+    if(!f) return;
+
+    const observation = $("pcdFaultObservation")?.value.trim() || "";
+    const last = f.history[f.history.length-1];
+
+    if(last) last.observation = observation;
+
+    f.branch = null;
+
+    $("pcdResultatCode").innerHTML = `
+      <section class="pcd-card">
+        <h3>Contrôle à refaire</h3>
+        <p>L'anomalie a été déclarée corrigée. Recommence le contrôle concerné avant de poursuivre.</p>
+        <button class="pcd-btn pcd-primary" data-action="fault-recheck">Refaire le contrôle</button>
+      </section>`;
+  }
+
+  function faultRecheck(){
+    const f = S.fault;
+    if(!f) return;
+
+    f.history.pop();
+    renderFaultStep();
+  }
+
+  function faultUnresolved(){
+    const f = S.fault;
+    if(!f) return;
+
+    const observation = $("pcdFaultObservation")?.value.trim() || "";
+    const last = f.history[f.history.length-1];
+    if(last) last.observation = observation;
+
+    $("pcdResultatCode").innerHTML = `
+      <section class="pcd-card">
+        <h3>Diagnostic interrompu</h3>
+        <div class="pcd-alert">
+          L'anomalie est toujours présente. Ne passe pas au contrôle suivant tant que cette anomalie n'est pas traitée ou expliquée.
+        </div>
+        <p><strong>Contrôle concerné :</strong> ${esc(f.branch.title)}</p>
+        <p><strong>Observation :</strong> ${esc(observation || "Non renseignée")}</p>
+        <p class="pcd-muted">Il faut résoudre cette anomalie ou consulter la documentation constructeur pour approfondir. Pro Clim ne conclut pas automatiquement au remplacement d'une pièce.</p>
+        <button class="pcd-btn pcd-secondary" data-action="fault-recheck">Revenir au contrôle</button>
+      </section>`;
+  }
+
+  function renderFaultConclusion(){
+    const f = S.fault;
+    if(!f) return;
+
+    const history = f.history.map((h,i)=>`
+      <div class="pcd-result">
+        <strong>${i+1}. ${esc(h.title)}</strong>
+        <p>${esc(h.result)}</p>
+        ${h.observation ? `<p>${esc(h.observation)}</p>` : ""}
+      </div>`).join("");
+
+    $("pcdResultatCode").innerHTML = `
+      <section class="pcd-card">
+        <h3>Parcours de contrôles terminé</h3>
+        <div class="pcd-alert">
+          Tous les contrôles de cette séquence ont été déclarés conformes.
+          Le défaut reste à confirmer avec les contrôles complémentaires et l'arbre de dépannage du manuel exact.
+        </div>
+        <h4>Résumé des vérifications</h4>
+        ${history}
+        <p class="pcd-muted">Source : ${esc(f.procedure.source)}</p>
+        <button class="pcd-btn pcd-primary" data-action="fault-reset">Recommencer le diagnostic</button>
+      </section>`;
+    $("pcdResultatCode").scrollIntoView({behavior:"smooth",block:"start"});
   }
 
   function start(k){
@@ -418,43 +608,30 @@
           <label class="pcd-field">Marque
             <select id="bMarque">${BRAND_OPTIONS}</select>
           </label>
-
           <label class="pcd-field">Modèle exact
             <input id="bModele" placeholder="Référence complète unité">
           </label>
-
           <label class="pcd-field">Type d'installation
             <select id="bInstallation">${TYPE_OPTIONS}</select>
           </label>
-
           <label class="pcd-field">Unité
-            <select id="bUnite">
-              ${OPTIONS(["Intérieure","Extérieure","Commande / autre"])}
-            </select>
+            <select id="bUnite">${OPTIONS(["Intérieure","Extérieure","Commande / autre"])}</select>
           </label>
-
           <label class="pcd-field">Composant recherché
             <select id="bComposant">${COMPONENT_OPTIONS}</select>
           </label>
-
           <label class="pcd-field">Type électrique
-            <select id="bType">
-              ${OPTIONS(["NTC","PTC","transducteur","pressostat","autre"])}
-            </select>
+            <select id="bType">${OPTIONS(["NTC","PTC","transducteur","pressostat","autre"])}</select>
           </label>
-
           <label class="pcd-field">Référence carte
             <input id="bCarte" placeholder="Référence sérigraphiée">
           </label>
-
           <label class="pcd-field">Repère connecteur/composant
             <input id="bRepere" placeholder="Ex. repère du schéma">
           </label>
-
           <label class="pcd-field">Fonction confirmée
             <input id="bFonction" placeholder="Fonction selon le schéma">
           </label>
-
           <label class="pcd-field">Document constructeur + page
             <input id="bSource" placeholder="Manuel de service, page/tableau">
           </label>
@@ -470,27 +647,13 @@
         <p class="pcd-muted">Uniquement pour une sonde résistive NTC ou PTC. Recopie deux points de la courbe constructeur qui encadrent la température mesurée. Le résultat est une interpolation entre ces deux points.</p>
 
         <div class="pcd-grid">
-          <label class="pcd-field">Température mesurée (°C)
-            <input id="bTemp" type="number" step="0.1">
-          </label>
-          <label class="pcd-field">Résistance mesurée (Ω)
-            <input id="bMesure" type="number" step="1">
-          </label>
-          <label class="pcd-field">Point constructeur 1 — °C
-            <input id="bT1" type="number" step="0.1">
-          </label>
-          <label class="pcd-field">Point constructeur 1 — Ω
-            <input id="bR1" type="number" step="1">
-          </label>
-          <label class="pcd-field">Point constructeur 2 — °C
-            <input id="bT2" type="number" step="0.1">
-          </label>
-          <label class="pcd-field">Point constructeur 2 — Ω
-            <input id="bR2" type="number" step="1">
-          </label>
-          <label class="pcd-field">Tolérance constructeur (%)
-            <input id="bTol" type="number" step="0.1" placeholder="Laisser vide si inconnue">
-          </label>
+          <label class="pcd-field">Température mesurée (°C)<input id="bTemp" type="number" step="0.1"></label>
+          <label class="pcd-field">Résistance mesurée (Ω)<input id="bMesure" type="number" step="1"></label>
+          <label class="pcd-field">Point constructeur 1 — °C<input id="bT1" type="number" step="0.1"></label>
+          <label class="pcd-field">Point constructeur 1 — Ω<input id="bR1" type="number" step="1"></label>
+          <label class="pcd-field">Point constructeur 2 — °C<input id="bT2" type="number" step="0.1"></label>
+          <label class="pcd-field">Point constructeur 2 — Ω<input id="bR2" type="number" step="1"></label>
+          <label class="pcd-field">Tolérance constructeur (%)<input id="bTol" type="number" step="0.1" placeholder="Laisser vide si inconnue"></label>
         </div>
 
         <button class="pcd-btn pcd-primary" data-action="calc-probe">Comparer la mesure →</button>
@@ -671,6 +834,7 @@
     S.symptom = "";
     S.step = 0;
     S.answers = [];
+    S.fault = null;
 
     ["pcdParcours","pcdBoard","pcdMesures","pcdRapportZone"].forEach(id => $(id).hidden = true);
 
@@ -707,6 +871,28 @@
       case "analyze-code":
         analyzeFault();
         break;
+      case "fault-ok":
+        faultConform();
+        break;
+      case "fault-ko":
+        faultAnomaly();
+        break;
+      case "fault-resolved":
+        faultResolved();
+        break;
+      case "fault-unresolved":
+        faultUnresolved();
+        break;
+      case "fault-recheck":
+        faultRecheck();
+        break;
+      case "fault-reset":
+        if(S.fault){
+          const f = S.fault;
+          $("pcdCode").value = f.code;
+          analyzeFault();
+        }
+        break;
       case "calc-probe":
         calcProbe();
         break;
@@ -736,7 +922,6 @@
     }
   }
 
-  // Synchronise le type électrique avec le composant choisi.
   function change(e){
     if(e.target.id !== "bComposant") return;
 
