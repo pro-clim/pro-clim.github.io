@@ -1,7 +1,7 @@
 
 /* ==========================================================
    PRO CLIM — DIAGNOSTIC CVC + CONTROLE COMPOSANTS
-   Version multimarque avec menus déroulants
+   Version multimarque + analyse des codes défauts
    ========================================================== */
 (() => {
   "use strict";
@@ -16,47 +16,25 @@
   const S = { symptom:"", step:0, answers:[] };
 
   const BRANDS = [
-    "Daikin",
-    "Mitsubishi Electric",
-    "Mitsubishi Heavy Industries",
-    "Samsung",
-    "Atlantic / Fujitsu",
-    "LG",
-    "Panasonic",
-    "Toshiba",
-    "Hitachi",
-    "Toshiba Carrier",
-    "Midea",
-    "Gree",
-    "Haier",
-    "Hisense",
-    "Carrier",
-    "Trane",
-    "York",
-    "Lennox",
-    "Bosch",
+    "Daikin", "Mitsubishi Electric", "Mitsubishi Heavy Industries",
+    "Samsung", "Atlantic / Fujitsu", "LG", "Panasonic", "Toshiba",
+    "Hitachi", "Toshiba Carrier", "Midea", "Gree", "Haier",
+    "Hisense", "Carrier", "Trane", "York", "Lennox", "Bosch",
     "Autre marque"
   ];
 
   const TYPES = [
-    "Split mural",
-    "Multi-split",
-    "Gainable",
-    "Cassette",
-    "Console",
-    "Plafonnier",
-    "DRV / VRV",
-    "PAC air/eau",
-    "Autre"
+    "Split mural", "Multi-split", "Gainable", "Cassette",
+    "Console", "Plafonnier", "DRV / VRV", "PAC air/eau", "Autre"
   ];
 
   const COMPONENTS = [
-    ["Sonde de température d'air", "NTC/PTC"],
-    ["Sonde de batterie", "NTC/PTC"],
-    ["Sonde de tuyauterie frigorifique", "NTC/PTC"],
-    ["Sonde de refoulement compresseur", "NTC/PTC"],
-    ["Sonde échangeur extérieur", "NTC/PTC"],
-    ["Sonde de température extérieure", "NTC/PTC"],
+    ["Sonde de température d'air", "NTC"],
+    ["Sonde de batterie", "NTC"],
+    ["Sonde de tuyauterie frigorifique", "NTC"],
+    ["Sonde de refoulement compresseur", "NTC"],
+    ["Sonde échangeur extérieur", "NTC"],
+    ["Sonde de température extérieure", "NTC"],
     ["Transducteur de pression", "transducteur"],
     ["Pressostat haute pression", "pressostat"],
     ["Pressostat basse pression", "pressostat"],
@@ -217,12 +195,20 @@
                 </select>
               </label>
             </div>
+
             <label class="pcd-field">Code défaut
               <input id="pcdCode" placeholder="Code exact / clignotements">
             </label>
+
             <label class="pcd-field">Contexte
               <textarea id="pcdContexte" placeholder="Depuis quand ? Conditions d'apparition ?"></textarea>
             </label>
+
+            <button class="pcd-btn pcd-primary" data-action="analyze-code">
+              🔎 Analyser le code défaut
+            </button>
+
+            <div id="pcdResultatCode" aria-live="polite"></div>
           </section>
 
           <section class="pcd-card">
@@ -242,6 +228,119 @@
         <div id="pcdRapportZone" hidden></div>
       </div>`;
     return true;
+  }
+
+  // ANALYSE DU CODE DEFAUT
+  function analyzeFault(){
+    const marque = $("pcdMarque").value.trim();
+    const modele = $("pcdModele").value.trim();
+    const type = $("pcdType").value.trim();
+    const code = $("pcdCode").value.trim().toUpperCase().replace(/\s+/g,"");
+    const contexte = $("pcdContexte").value.trim();
+    const out = $("pcdResultatCode");
+
+    if(!marque || !code){
+      out.innerHTML = `
+        <div class="pcd-alert">
+          Sélectionne une marque et renseigne un code défaut.
+        </div>`;
+      return;
+    }
+
+    let diagnostic = "";
+
+    if(
+      marque === "Daikin" &&
+      (code === "U4" || code === "U4-00")
+    ){
+      diagnostic = `
+        <div class="pcd-result">
+          <h3>Défaut de communication suspecté</h3>
+
+          <p>
+            Sur plusieurs gammes Daikin, U4 correspond à
+            un défaut de communication entre unités.
+            La signification et la procédure exactes doivent
+            être confirmées avec la documentation du modèle.
+          </p>
+
+          <h4>Contrôles à effectuer dans l'ordre</h4>
+
+          <ol>
+            <li>
+              <strong>Identifier les unités :</strong>
+              relever les références complètes intérieure et extérieure.
+            </li>
+            <li>
+              <strong>Vérifier l'alimentation :</strong>
+              contrôler les alimentations et protections des unités
+              selon le schéma électrique.
+            </li>
+            <li>
+              <strong>Contrôler la liaison :</strong>
+              inspecter le câble de communication, les borniers,
+              les connexions, le serrage et les éventuelles inversions.
+            </li>
+            <li>
+              <strong>Rechercher une anomalie de câblage :</strong>
+              contrôler continuité et isolement uniquement selon
+              la procédure constructeur et hors tension lorsque requis.
+            </li>
+            <li>
+              <strong>Observer les cartes :</strong>
+              relever les voyants et états de diagnostic des cartes
+              intérieure et extérieure.
+            </li>
+            <li>
+              <strong>Confirmer avant remplacement :</strong>
+              suivre l'arbre de dépannage du manuel correspondant
+              à la référence exacte.
+            </li>
+          </ol>
+
+          <div class="pcd-alert">
+            Ne condamne pas une carte électronique sur le seul code U4.
+            Le câblage, l'alimentation et les connexions doivent être
+            contrôlés avant toute conclusion.
+          </div>
+        </div>`;
+    } else {
+      diagnostic = `
+        <div class="pcd-alert">
+          Ce code n'est pas encore présent dans la base de diagnostic
+          vérifiée de Pro Clim pour cette marque.
+          Il faut consulter la documentation correspondant au modèle exact.
+          Aucune signification ne sera inventée.
+        </div>`;
+    }
+
+    out.innerHTML = `
+      <section class="pcd-card">
+        <h3>Résultat de l'analyse</h3>
+
+        <p><strong>Marque :</strong> ${esc(marque)}</p>
+        <p><strong>Modèle :</strong> ${esc(modele || "Non renseigné")}</p>
+        <p><strong>Installation :</strong> ${esc(type || "Non renseignée")}</p>
+        <p><strong>Code :</strong> ${esc(code)}</p>
+
+        ${diagnostic}
+
+        ${modele ? "" : `
+          <div class="pcd-alert">
+            <strong>Attention :</strong> renseigne la référence exacte
+            de l'unité intérieure et extérieure pour confirmer
+            la signification du défaut et obtenir la bonne procédure.
+          </div>
+        `}
+
+        ${contexte ? `<p><strong>Contexte :</strong> ${esc(contexte)}</p>` : ""}
+
+        <p class="pcd-muted">
+          Analyse indicative. La documentation constructeur de la
+          référence exacte reste indispensable.
+        </p>
+      </section>`;
+    out.scrollIntoView({behavior:"smooth",block:"start"});
   }
 
   function start(k){
@@ -410,8 +509,6 @@
     $("bMarque").value = $("pcdMarque").value;
     $("bModele").value = $("pcdModele").value;
     $("bInstallation").value = $("pcdType").value;
-
-    if(!$("bMarque").value) $("bMarque").value = "";
   }
 
   function calcProbe(){
@@ -607,6 +704,9 @@
       case "open-board":
         openBoard();
         break;
+      case "analyze-code":
+        analyzeFault();
+        break;
       case "calc-probe":
         calcProbe();
         break;
@@ -636,6 +736,21 @@
     }
   }
 
+  // Synchronise le type électrique avec le composant choisi.
+  function change(e){
+    if(e.target.id !== "bComposant") return;
+
+    const option = e.target.selectedOptions[0];
+    const type = option?.dataset.type;
+
+    if(!type || type === "NTC/PTC") return;
+
+    const select = $("bType");
+    if(select && [...select.options].some(o => o.value === type)){
+      select.value = type;
+    }
+  }
+
   function init(){
     if(!$(PAGE) || $(PAGE).dataset.pcDiagnosticReady==="1") return;
     styles();
@@ -643,6 +758,7 @@
   }
 
   document.addEventListener("click",click);
+  document.addEventListener("change",change);
 
   if(document.readyState==="loading"){
     document.addEventListener("DOMContentLoaded",init);
