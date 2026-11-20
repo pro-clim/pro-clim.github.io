@@ -1,565 +1,410 @@
 
 /* ==========================================================
-   PRO CLIM — DIAGNOSTIC MULTIMARQUE
-   Version 1 — Recherche défauts, diagnostic guidé et mesures
+   PRO CLIM — DIAGNOSTIC CVC + CONTROLE COMPOSANTS
+   Remplacement complet de js/diagnostic.js
+   Compatible avec #pageDiagnostic ; aucun changement HTML.
    ========================================================== */
+(() => {
+  "use strict";
+  const PAGE = "pageDiagnostic";
+  const $ = id => document.getElementById(id);
+  const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const S = { symptom: "", step: 0, answers: [] };
 
-(function () {
-    "use strict";
+  const PATHS = {
+    froid: { title:"Ne fait plus de froid", steps:[
+      ["Confirmer la demande", "Mode FROID, consigne, programmation, commande centralisée et température ambiante."],
+      ["Contrôler alimentation et protections", "Vérifier visuellement les protections, voyants et connexions. Ne pas réarmer plusieurs fois une protection qui déclenche."],
+      ["Observer les deux unités", "Noter les voyants, codes, ventilateurs, bruits et éventuelles mises en sécurité."],
+      ["Vérifier les débits d'air", "Inspecter filtres, échangeurs, turbines, ventilateurs et dégagements du groupe extérieur."],
+      ["Relever les températures", "Mesurer air repris et soufflé après stabilisation. Noter consigne, température ambiante et temps de fonctionnement."],
+      ["Approfondir le circuit frigorifique", "Appliquer la procédure constructeur et relever toutes les conditions. Une pression isolée ne permet pas de conclure à un manque de fluide."]]},
+    chaud: { title:"Ne fait plus de chaud", steps:[
+      ["Confirmer la demande", "Vérifier mode CHAUD, consigne, programmation et commande centralisée."],
+      ["Relever les conditions extérieures", "Noter température, humidité, état de batterie et présence de givre."],
+      ["Observer les dégivrages", "Noter fréquence, durée, évacuation des condensats et état de la batterie après cycle."],
+      ["Contrôler les débits d'air", "Inspecter filtres, échangeurs, ventilateurs et obstacles."],
+      ["Relever les températures", "Mesurer reprise, soufflage, extérieur et tuyauteries si pertinent, après stabilisation."],
+      ["Contrôler régulation et circuit", "Lire les défauts, contrôler les sondes et paramètres selon la documentation exacte."]]},
+    demarrage: { title:"Ne démarre pas", steps:[
+      ["Vérifier la commande", "Contrôler marche/arrêt, mode, consigne, piles, programmation et verrouillage."],
+      ["Lire les voyants et défauts", "Relever le code exact, clignotements, unité concernée et circonstances."],
+      ["Contrôler les protections", "Identifier tout déclenchement. Ne pas réarmer à répétition."],
+      ["Inspecter hors tension", "Après consignation et vérification d'absence de tension, inspecter borniers, connecteurs et traces d'échauffement."],
+      ["Contrôler sécurités et communication", "Suivre le schéma et la procédure constructeur du modèle exact."]]},
+    eau: { title:"Fuite d'eau / condensats", steps:[
+      ["Localiser l'origine", "Repérer le point de sortie et vérifier si la fuite apparaît à l'arrêt ou en fonctionnement."],
+      ["Inspecter filtre et batterie", "Rechercher encrassement, givrage et défaut de circulation d'air."],
+      ["Contrôler bac et évacuation", "Vérifier bac, pente, pincements, contre-pente et écoulement."],
+      ["Contrôler la pompe si présente", "Suivre la notice : flotteur, aspiration, refoulement, alimentation et alarme."],
+      ["Vérifier pose et isolation", "Contrôler niveau de l'unité, isolation des tuyauteries et ponts thermiques."]]},
+    bruit: { title:"Bruit / vibration", steps:[
+      ["Localiser le bruit", "Identifier unité, zone, fréquence et conditions d'apparition."],
+      ["Contrôler les fixations", "Vérifier supports, silentblocs, visserie et contact avec les parois."],
+      ["Inspecter les ventilateurs", "Hors tension, rechercher corps étranger, jeu, pales endommagées ou frottement."],
+      ["Contrôler les tuyauteries", "Rechercher contact, vibration, contrainte ou défaut de support."],
+      ["Comparer au fonctionnement normal", "Noter mode, fréquence, vitesse et conditions avant diagnostic complémentaire."]]},
+    performance: { title:"Manque de performance", steps:[
+      ["Vérifier consigne et conditions", "Noter mode, consigne, température intérieure/extérieure et temps de fonctionnement."],
+      ["Contrôler les débits", "Inspecter filtres, batteries, turbines, ventilateurs, gaines et bouches."],
+      ["Relever les températures", "Mesurer reprise/soufflage et tuyauteries si pertinent, avec conditions stabilisées."],
+      ["Vérifier régulation et sondes", "Comparer les températures affichées à une mesure indépendante et contrôler les sondes selon notice."],
+      ["Approfondir", "Relever les paramètres prescrits par le constructeur ; ne pas conclure sur une pression isolée."]]},
+    code: { title:"Code défaut constructeur", steps:[
+      ["Identifier exactement la machine", "Relever marque, référence complète, unité intérieure/extérieure, carte et fluide."],
+      ["Relever le défaut", "Noter le code exact, clignotements, écran concerné, historique et circonstances."],
+      ["Trouver la documentation correspondante", "Utiliser le manuel de service de la référence exacte et de la bonne génération."],
+      ["Suivre les contrôles prescrits", "Le code désigne souvent une condition détectée, pas automatiquement la pièce à remplacer."],
+      ["Confirmer par les mesures", "Noter chaque mesure, son point de mesure, les conditions et la procédure appliquée."]]}
+  };
 
-    const MARQUES = [
-        "Daikin",
-        "Mitsubishi Electric",
-        "Mitsubishi Heavy Industries",
-        "Samsung",
-        "Atlantic",
-        "Fujitsu",
-        "LG",
-        "Panasonic",
-        "Toshiba",
-        "Hitachi",
-        "Toshiba Carrier",
-        "Autre"
-    ];
+  function styles(){
+    if($("pcDiagnosticStyles")) return;
+    const st=document.createElement("style");
+    st.id="pcDiagnosticStyles";
+    st.textContent=`
+      #${PAGE} .pcd-wrap{max-width:900px;margin:auto;padding:12px;color:#172033}
+      #${PAGE} .pcd-card{background:#fff;border:1px solid #dbe3ed;border-radius:14px;padding:15px;margin:12px 0;box-shadow:0 2px 8px #0f172a0b}
+      #${PAGE} .pcd-hero{background:#0D47A1;color:white;border-radius:14px;padding:17px;margin-bottom:12px}
+      #${PAGE} .pcd-hero h2{margin:0 0 5px}
+      #${PAGE} .pcd-muted{color:#64748b;font-size:13px;line-height:1.5}
+      #${PAGE} .pcd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+      #${PAGE} .pcd-field{display:block;font-size:13px;font-weight:700;margin:9px 0}
+      #${PAGE} .pcd-field input,#${PAGE} .pcd-field select,#${PAGE} .pcd-field textarea{box-sizing:border-box;width:100%;display:block;margin-top:5px;padding:11px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#172033;font:inherit;font-weight:400}
+      #${PAGE} .pcd-field textarea{min-height:75px}
+      #${PAGE} .pcd-symptoms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+      #${PAGE} .pcd-btn,#${PAGE} .pcd-symptom{border:0;border-radius:9px;padding:13px;margin:5px 0;font-weight:800;cursor:pointer}
+      #${PAGE} .pcd-btn{width:100%}
+      #${PAGE} .pcd-primary{background:#0D47A1;color:#fff}
+      #${PAGE} .pcd-secondary{background:#e8f0fe;color:#0D47A1}
+      #${PAGE} .pcd-symptom{width:100%;min-height:65px;background:#f8fafc;border:1px solid #cbd5e1;color:#172033;text-align:left}
+      #${PAGE} .pcd-step{background:#f8fafc;border-left:4px solid #0D47A1;border-radius:8px;padding:13px;margin:12px 0;line-height:1.5}
+      #${PAGE} .pcd-alert{background:#fff7ed;color:#9a3412;border-radius:9px;padding:12px;font-size:12px;line-height:1.5;margin:12px 0}
+      #${PAGE} .pcd-result{border:1px solid #dbe3ed;border-radius:9px;padding:12px;margin:10px 0}
+      #${PAGE} .pcd-good{background:#ecfdf5;color:#166534}
+      #${PAGE} .pcd-actions{display:flex;gap:8px}
+      #${PAGE} .pcd-actions>*{flex:1}
+      @media(max-width:520px){#${PAGE} .pcd-grid{grid-template-columns:1fr 1fr}}
+    `;
+    document.head.appendChild(st);
+  }
 
-    const TYPES = [
-        "Split mural",
-        "Multi-split",
-        "Gainable",
-        "Cassette",
-        "Console",
-        "DRV / VRV",
-        "Pompe à chaleur",
-        "Autre"
-    ];
+  function build(){
+    const page=$(PAGE);
+    if(!page)return false;
+    page.innerHTML=`
+      <div class="pcd-wrap">
+        <div class="pcd-hero">
+          <h2>🛠️ Assistant dépannage CVC</h2>
+          <p>Diagnostic guidé, identification des composants et relevé des mesures.</p>
+        </div>
+        <div id="pcdAccueil">
+          <section class="pcd-card">
+            <h3>Quel est le symptôme ?</h3>
+            <div class="pcd-symptoms">
+              ${Object.entries(PATHS).map(([k,v])=>`<button class="pcd-symptom" data-symptom="${k}">${esc(v.title)}</button>`).join("")}
+            </div>
+          </section>
+          <section class="pcd-card">
+            <h3>Identification de l'installation</h3>
+            <div class="pcd-grid">
+              <label class="pcd-field">Marque<input id="pcdMarque" placeholder="Daikin, Mitsubishi Electric…"></label>
+              <label class="pcd-field">Modèle exact<input id="pcdModele" placeholder="Référence complète"></label>
+              <label class="pcd-field">Type<select id="pcdType"><option>Split mural</option><option>Multi-split</option><option>Gainable</option><option>Cassette</option><option>DRV / VRV</option><option>Autre</option></select></label>
+              <label class="pcd-field">Fluide<input id="pcdFluide" placeholder="R32, R410A…"></label>
+            </div>
+            <label class="pcd-field">Code défaut<input id="pcdCode" placeholder="Code exact / clignotements"></label>
+            <label class="pcd-field">Contexte<textarea id="pcdContexte" placeholder="Depuis quand ? Conditions d'apparition ?"></textarea></label>
+          </section>
+          <section class="pcd-card">
+            <h3>🔬 Contrôle d'un composant sur carte</h3>
+            <p class="pcd-muted">Repère, fonction et valeurs doivent correspondre au modèle exact et au schéma constructeur.</p>
+            <button class="pcd-btn pcd-primary" data-action="open-board">Ouvrir le contrôle composants →</button>
+          </section>
+          <div class="pcd-alert"><strong>Sécurité :</strong> consignation et vérification d'absence de tension avant toute intervention hors tension. Les mesures sous tension et interventions frigorifiques exigent les compétences, habilitations/certifications, équipements et procédures adaptés.</div>
+        </div>
+        <div id="pcdParcours" hidden></div>
+        <div id="pcdBoard" hidden></div>
+        <div id="pcdMesures" hidden></div>
+        <div id="pcdRapportZone" hidden></div>
+      </div>`;
+    return true;
+  }
 
-    const SYMPTOMES = [
-        { value: "plus_de_froid", label: "Ne fait plus de froid" },
-        { value: "plus_de_chauffage", label: "Ne fait plus de chauffage" },
-        { value: "ne_demarre_pas", label: "Ne démarre pas" },
-        { value: "s_arrete", label: "Démarre puis s'arrête" },
-        { value: "soufflage_faible", label: "Soufflage faible" },
-        { value: "givre", label: "Formation de givre" },
-        { value: "bruit", label: "Bruit anormal" },
-        { value: "fuite_eau", label: "Fuite d'eau" },
-        { value: "autre", label: "Autre problème" }
-    ];
+  function start(k){
+    S.symptom=k;
+    S.step=0;
+    S.answers=[];
+    showStep();
+  }
 
-    let diagnosticActif = false;
-    let etapeDiagnostic = 0;
-    let reponsesDiagnostic = [];
+  function showStep(){
+    const p=PATHS[S.symptom], step=p.steps[S.step];
+    $("pcdAccueil").hidden=true;
+    $("pcdBoard").hidden=true;
+    $("pcdMesures").hidden=true;
+    $("pcdRapportZone").hidden=true;
+    const z=$("pcdParcours");
+    z.hidden=false;
+    z.innerHTML=`
+      <section class="pcd-card">
+        <button class="pcd-btn pcd-secondary" data-action="home">← Retour</button>
+        <h3>${esc(p.title)}</h3>
+        <p class="pcd-muted">Étape ${S.step+1} / ${p.steps.length}</p>
+        <div class="pcd-step"><strong>${esc(step[0])}</strong><p>${esc(step[1])}</p></div>
+        <label class="pcd-field">Résultat
+          <select id="pcdEtat">
+            <option>Non réalisé</option><option>Conforme</option>
+            <option>Anomalie constatée</option><option>À approfondir</option>
+            <option>Non applicable</option>
+          </select>
+        </label>
+        <label class="pcd-field">Mesure / observation
+          <textarea id="pcdObs" placeholder="Valeur relevée, constat…">${esc(S.answers[S.step]?.obs||"")}</textarea>
+        </label>
+        <div class="pcd-actions">
+          <button class="pcd-btn pcd-secondary" data-action="prev" ${S.step===0?"disabled":""}>← Précédent</button>
+          <button class="pcd-btn pcd-primary" data-action="next">${S.step===p.steps.length-1?"Terminer →":"Enregistrer et continuer →"}</button>
+        </div>
+      </section>`;
+    if(S.answers[S.step])$("pcdEtat").value=S.answers[S.step].etat;
+  }
 
-    const PARCOURS = {
-        plus_de_froid: [
-            {
-                question: "L'unité intérieure souffle-t-elle de l'air ?",
-                oui: "Contrôler la température de soufflage et poursuivre les vérifications.",
-                non: "Contrôler l'alimentation, la commande, les sécurités et le ventilateur intérieur."
-            },
-            {
-                question: "Le groupe extérieur fonctionne-t-il ?",
-                oui: "Vérifier le fonctionnement du compresseur et du ventilateur extérieur.",
-                non: "Contrôler l'alimentation du groupe, les protections, les commandes et les défauts enregistrés."
-            },
-            {
-                question: "Le compresseur fonctionne-t-il réellement ?",
-                oui: "Relever les pressions, les températures des tuyauteries et les conditions de fonctionnement.",
-                non: "Contrôler les autorisations de démarrage, les sécurités, les sondes et la commande inverter."
-            },
-            {
-                question: "Le débit d'air intérieur est-il correct ?",
-                oui: "Contrôler les températures et les paramètres frigorifiques en fonctionnement stabilisé.",
-                non: "Contrôler les filtres, la batterie, le ventilateur et les obstacles au passage d'air."
-            }
-        ],
-
-        plus_de_chauffage: [
-            {
-                question: "L'unité intérieure souffle-t-elle de l'air ?",
-                oui: "Relever la température de reprise et la température de soufflage.",
-                non: "Contrôler la commande, les sécurités et le ventilateur intérieur."
-            },
-            {
-                question: "Le groupe extérieur fonctionne-t-il ?",
-                oui: "Vérifier le compresseur, le ventilateur et le cycle de fonctionnement.",
-                non: "Contrôler l'alimentation, les sécurités et les défauts de commande."
-            },
-            {
-                question: "Le groupe extérieur est-il fortement givré ?",
-                oui: "Vérifier les conditions extérieures, le dégivrage, les sondes et les échanges thermiques.",
-                non: "Relever les pressions et températures après stabilisation."
-            }
-        ],
-
-        ne_demarre_pas: [
-            {
-                question: "L'appareil est-il alimenté électriquement ?",
-                oui: "Contrôler la commande, les codes défauts et les autorisations de fonctionnement.",
-                non: "Faire contrôler l'alimentation, le disjoncteur et les protections électriques."
-            },
-            {
-                question: "Un code défaut est-il affiché ?",
-                oui: "Saisir le code dans la recherche multimarque pour identifier la documentation à consulter.",
-                non: "Contrôler la télécommande, les liaisons, les sécurités et les cartes de commande."
-            }
-        ],
-
-        s_arrete: [
-            {
-                question: "L'arrêt se produit-il après quelques minutes ?",
-                oui: "Noter le délai exact et relever le code défaut éventuel.",
-                non: "Préciser si l'arrêt est immédiat ou aléatoire."
-            },
-            {
-                question: "Un code défaut apparaît-il après l'arrêt ?",
-                oui: "Relever le code, la marque et la référence exacte de l'appareil.",
-                non: "Contrôler les sécurités, les sondes et les conditions de fonctionnement."
-            }
-        ],
-
-        soufflage_faible: [
-            {
-                question: "Les filtres sont-ils propres ?",
-                oui: "Contrôler la batterie et la vitesse du ventilateur.",
-                non: "Nettoyer les filtres puis contrôler à nouveau le débit d'air."
-            },
-            {
-                question: "Le ventilateur tourne-t-il normalement ?",
-                oui: "Contrôler l'encrassement de la batterie et les obstacles au soufflage.",
-                non: "Contrôler le moteur, sa commande et les connexions."
-            }
-        ],
-
-        givre: [
-            {
-                question: "Le givre se forme-t-il sur l'unité intérieure ?",
-                oui: "Contrôler le débit d'air, les filtres, la batterie et les conditions de fonctionnement.",
-                non: "Si le givre est sur le groupe extérieur, vérifier le mode, les conditions extérieures et le cycle de dégivrage."
-            },
-            {
-                question: "Le débit d'air est-il correct ?",
-                oui: "Relever les températures et les paramètres frigorifiques.",
-                non: "Contrôler les filtres, la batterie et le ventilateur."
-            }
-        ],
-
-        bruit: [
-            {
-                question: "Le bruit provient-il de l'unité intérieure ?",
-                oui: "Contrôler le ventilateur, les fixations, les vibrations et l'écoulement des condensats.",
-                non: "Contrôler le ventilateur extérieur, les fixations et les vibrations du groupe."
-            }
-        ],
-
-        fuite_eau: [
-            {
-                question: "L'eau provient-elle de l'unité intérieure ?",
-                oui: "Contrôler le bac à condensats, la pente, l'évacuation et la pompe éventuelle.",
-                non: "Localiser précisément l'origine avant toute intervention."
-            },
-            {
-                question: "L'évacuation des condensats est-elle libre ?",
-                oui: "Contrôler le bac, les raccordements et l'isolation des tuyauteries.",
-                non: "Déboucher et vérifier la pente ainsi que le fonctionnement de la pompe."
-            }
-        ],
-
-        autre: [
-            {
-                question: "Un code défaut est-il présent ?",
-                oui: "Saisir la marque, la référence et le code dans la recherche multimarque.",
-                non: "Décrire précisément le symptôme et les conditions dans lesquelles il apparaît."
-            }
-        ]
+  function saveStep(){
+    S.answers[S.step]={
+      etat:$("pcdEtat").value,
+      obs:$("pcdObs").value.trim()
     };
+  }
 
-    function echapper(texte) {
-        return String(texte ?? "").replace(/[&<>"']/g, function (caractere) {
-            return {
-                "&": "&amp;",
-                "<": "&lt;",
-                ">": "&gt;",
-                '"': "&quot;",
-                "'": "&#039;"
-            }[caractere];
-        });
-    }
-
-    function champ(id, label, type = "text", placeholder = "") {
-        return `
-            <label class="pcdiag-label" for="${id}">${label}</label>
-            <input class="pcdiag-input" id="${id}" type="${type}"
-                placeholder="${placeholder}" autocomplete="off">
-        `;
-    }
-
-    function selectHTML(id, label, options, premier) {
-        return `
-            <label class="pcdiag-label" for="${id}">${label}</label>
-            <select class="pcdiag-input" id="${id}">
-                <option value="">${premier}</option>
-                ${options.map(option => `
-                    <option value="${echapper(option)}">${echapper(option)}</option>
-                `).join("")}
+  function openBoard(){
+    $("pcdAccueil").hidden=true;
+    $("pcdParcours").hidden=true;
+    $("pcdMesures").hidden=true;
+    $("pcdRapportZone").hidden=true;
+    const z=$("pcdBoard");
+    z.hidden=false;
+    z.innerHTML=`
+      <section class="pcd-card">
+        <button class="pcd-btn pcd-secondary" data-action="home">← Retour</button>
+        <h3>Identification du composant sur la carte</h3>
+        <p class="pcd-muted">Renseigne les éléments relevés sur la plaque signalétique, la carte et le schéma de service.</p>
+        <div class="pcd-grid">
+          <label class="pcd-field">Marque<input id="bMarque" placeholder="Daikin, Mitsubishi Electric…"></label>
+          <label class="pcd-field">Modèle exact<input id="bModele" placeholder="Référence complète unité"></label>
+          <label class="pcd-field">Unité<select id="bUnite"><option>Intérieure</option><option>Extérieure</option><option>Commande / autre</option></select></label>
+          <label class="pcd-field">Référence carte<input id="bCarte" placeholder="Référence sérigraphiée"></label>
+          <label class="pcd-field">Repère connecteur/composant<input id="bRepere" placeholder="Repère indiqué sur schéma"></label>
+          <label class="pcd-field">Fonction confirmée<input id="bFonction" placeholder="Ex. sonde batterie, air…"></label>
+          <label class="pcd-field">Type
+            <select id="bType">
+              <option value="NTC">Sonde NTC</option>
+              <option value="PTC">Sonde PTC</option>
+              <option value="transducteur">Transducteur pression / signal</option>
+              <option value="pressostat">Pressostat / contact</option>
+              <option value="autre">Autre composant</option>
             </select>
-        `;
+          </label>
+          <label class="pcd-field">Document constructeur + page<input id="bSource" placeholder="Manuel de service, page/tableau"></label>
+        </div>
+        <div class="pcd-alert"><strong>Attention :</strong> R1T, R2T, CN1, etc. ne sont pas des identifiants universels. Il faut confirmer leur fonction avec le modèle exact, la référence de carte et le schéma.</div>
+      </section>
+      <section class="pcd-card">
+        <h3>🌡️ Comparaison résistance / température</h3>
+        <p class="pcd-muted">Uniquement pour une sonde résistive NTC ou PTC. Recopie deux points de la courbe constructeur qui encadrent la température mesurée. Le résultat est une interpolation entre ces deux points.</p>
+        <div class="pcd-grid">
+          <label class="pcd-field">Température mesurée (°C)<input id="bTemp" type="number" step="0.1"></label>
+          <label class="pcd-field">Résistance mesurée (Ω)<input id="bMesure" type="number" step="1"></label>
+          <label class="pcd-field">Point constructeur 1 — °C<input id="bT1" type="number" step="0.1"></label>
+          <label class="pcd-field">Point constructeur 1 — Ω<input id="bR1" type="number" step="1"></label>
+          <label class="pcd-field">Point constructeur 2 — °C<input id="bT2" type="number" step="0.1"></label>
+          <label class="pcd-field">Point constructeur 2 — Ω<input id="bR2" type="number" step="1"></label>
+          <label class="pcd-field">Tolérance constructeur (%)<input id="bTol" type="number" step="0.1" placeholder="Laisser vide si inconnue"></label>
+        </div>
+        <button class="pcd-btn pcd-primary" data-action="calc-probe">Comparer la mesure →</button>
+        <div id="bResult" aria-live="polite"></div>
+        <div class="pcd-alert">Avant mesure ohmique : couper, consigner, vérifier l'absence de tension et isoler la sonde de la carte selon la notice. Ne jamais mesurer une résistance sur un circuit alimenté. Un transducteur actif ne se contrôle pas comme une NTC.</div>
+      </section>
+      <section class="pcd-card">
+        <h3>Autres composants</h3>
+        <p class="pcd-muted">Transducteurs, pressostats, ventilateurs, détendeurs et vannes nécessitent chacun leur procédure : brochage, alimentation, signal, seuil ou résistance selon le manuel exact. Aucun test générique ne sera substitué aux données constructeur.</p>
+      </section>`;
+    if($("pcdMarque").value)$("bMarque").value=$("pcdMarque").value;
+    if($("pcdModele").value)$("bModele").value=$("pcdModele").value;
+  }
+
+  function calcProbe(){
+    const val=id=>$(id).value.trim();
+    const type=val("bType");
+    const t=Number(val("bTemp"));
+    const m=Number(val("bMesure"));
+    const t1=Number(val("bT1"));
+    const r1=Number(val("bR1"));
+    const t2=Number(val("bT2"));
+    const r2=Number(val("bR2"));
+    const tolText=val("bTol");
+    const out=$("bResult");
+
+    if(type!=="NTC"&&type!=="PTC"){
+      out.innerHTML='<div class="pcd-alert">Ce composant ne se contrôle pas avec une simple courbe résistance/température. Consulte le brochage et la procédure constructeur.</div>';
+      return;
     }
 
-    function bouton(id, texte, couleur = "principal") {
-        return `<button type="button" class="pcdiag-btn pcdiag-${couleur}" id="${id}">${texte}</button>`;
+    const required=["bMarque","bModele","bCarte","bRepere","bFonction","bSource"];
+    if(required.some(id=>!val(id))){
+      out.innerHTML='<div class="pcd-alert">Complète marque, modèle exact, référence de carte, repère, fonction confirmée et source constructeur avant validation.</div>';
+      return;
     }
 
-    function ajouterStyles() {
-        if (document.getElementById("pcdiag-styles")) return;
-
-        const style = document.createElement("style");
-        style.id = "pcdiag-styles";
-        style.textContent = `
-            #pcDiagApp { color: inherit; width: 100%; }
-            #pcDiagApp * { box-sizing: border-box; }
-            .pcdiag-card {
-                background: var(--card-bg, #fff);
-                border: 1px solid rgba(100,100,100,.2);
-                border-radius: 14px;
-                padding: 16px;
-                margin: 14px 0;
-            }
-            .pcdiag-title { font-size: 19px; font-weight: 700; margin: 0 0 8px; }
-            .pcdiag-subtitle { font-size: 14px; opacity: .75; margin: 0 0 14px; }
-            .pcdiag-label { display:block; font-weight:600; font-size:14px; margin:12px 0 6px; }
-            .pcdiag-input {
-                display:block; width:100%; min-height:44px; padding:10px 12px;
-                border:1px solid #aaa; border-radius:9px; background:transparent;
-                color:inherit; font:inherit;
-            }
-            .pcdiag-btn {
-                display:block; width:100%; border:0; border-radius:10px;
-                padding:13px 14px; margin-top:12px; font-size:15px;
-                font-weight:700; cursor:pointer;
-            }
-            .pcdiag-principal { background:#0D47A1; color:white; }
-            .pcdiag-secondaire { background:#e8eef8; color:#0D47A1; }
-            .pcdiag-resultat {
-                padding:13px; border-radius:10px; margin-top:12px;
-                background:rgba(13,71,161,.08); line-height:1.5;
-            }
-            .pcdiag-warning {
-                padding:12px; border-left:4px solid #d58a00;
-                background:rgba(213,138,0,.09); border-radius:7px;
-                font-size:13px; line-height:1.5; margin-top:12px;
-            }
-            .pcdiag-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-            .pcdiag-small { font-size:12px; opacity:.7; }
-            .pcdiag-link { display:inline-block; margin-top:12px; color:#1565c0; font-weight:700; }
-            .pcdiag-separateur { border:0; border-top:1px solid rgba(120,120,120,.2); margin:18px 0; }
-            @media(max-width:380px) { .pcdiag-grid { grid-template-columns:1fr; } }
-        `;
-        document.head.appendChild(style);
+    if(![t,m,t1,r1,t2,r2].every(Number.isFinite)||m<=0||r1<=0||r2<=0||t1===t2){
+      out.innerHTML='<div class="pcd-alert">Renseigne des valeurs numériques valides. Les résistances doivent être positives et les températures différentes.</div>';
+      return;
     }
 
-    function afficherInterface() {
-        const page = document.getElementById("pageDiagnostic");
-        if (!page) {
-            console.error("Pro Clim : pageDiagnostic introuvable.");
-            return;
-        }
-
-        ajouterStyles();
-
-        let app = document.getElementById("pcDiagApp");
-        if (!app) {
-            app = document.createElement("div");
-            app.id = "pcDiagApp";
-            page.innerHTML = "";
-            page.appendChild(app);
-        }
-
-        app.innerHTML = `
-            <div class="pcdiag-card">
-                <h2 class="pcdiag-title">🔧 Diagnostic intelligent CVC</h2>
-                <p class="pcdiag-subtitle">
-                    Recherche de défauts multimarque et aide au dépannage terrain.
-                </p>
-
-                ${selectHTML("pcDiagMarque", "Fabricant", MARQUES, "Choisir une marque")}
-                ${selectHTML("pcDiagType", "Type d'installation", TYPES, "Choisir un appareil")}
-                ${champ("pcDiagModele", "Référence / modèle", "text", "Ex. : RXM... / PUZ...")}
-                ${champ("pcDiagCode", "Code erreur", "text", "Ex. : code affiché sur l'appareil")}
-
-                <label class="pcdiag-label" for="pcDiagPhoto">
-                    Photo de l'afficheur ou de la plaque signalétique (facultatif)
-                </label>
-                <input class="pcdiag-input" id="pcDiagPhoto" type="file" accept="image/*" capture="environment">
-                <p class="pcdiag-small" id="pcDiagPhotoNom">Aucune photo sélectionnée.</p>
-
-                ${bouton("pcDiagRechercher", "Rechercher le code défaut")}
-                <div id="pcDiagCodeResultat" aria-live="polite"></div>
-            </div>
-
-            <div class="pcdiag-card">
-                <h2 class="pcdiag-title">🧭 Diagnostic guidé</h2>
-                <p class="pcdiag-subtitle">
-                    Décris le symptôme pour suivre les contrôles étape par étape.
-                </p>
-                ${selectHTML("pcDiagSymptome", "Symptôme constaté", SYMPTOMES.map(s => s.label), "Choisir un symptôme")}
-                ${bouton("pcDiagDemarrer", "Démarrer le diagnostic")}
-                <div id="pcDiagParcours" aria-live="polite"></div>
-            </div>
-
-            <div class="pcdiag-card">
-                <h2 class="pcdiag-title">📏 Relevé des mesures</h2>
-                <p class="pcdiag-subtitle">
-                    Enregistre les conditions de fonctionnement et les mesures terrain.
-                </p>
-
-                <div class="pcdiag-grid">
-                    ${champ("pcDiagFluide", "Fluide frigorigène", "text", "Ex. : R32")}
-                    ${champ("pcDiagMode", "Mode de fonctionnement", "text", "Froid / chaud")}
-                    ${champ("pcDiagExt", "Température extérieure (°C)", "number", "Ex. : 32")}
-                    ${champ("pcDiagReprise", "Température reprise (°C)", "number", "Ex. : 27")}
-                    ${champ("pcDiagSoufflage", "Température soufflage (°C)", "number", "Ex. : 12")}
-                    ${champ("pcDiagBP", "Basse pression (bar)", "number", "Ex. : 8")}
-                    ${champ("pcDiagHP", "Haute pression (bar)", "number", "Ex. : 24")}
-                    ${champ("pcDiagAspiration", "Température tuyau gaz (°C)", "number", "Ex. : 14")}
-                    ${champ("pcDiagLiquide", "Température tuyau liquide (°C)", "number", "Ex. : 35")}
-                    ${champ("pcDiagIntensite", "Intensité mesurée (A)", "number", "Ex. : 5.2")}
-                </div>
-
-                <label class="pcdiag-label" for="pcDiagNotes">Observations complémentaires</label>
-                <textarea class="pcdiag-input" id="pcDiagNotes" rows="3"
-                    placeholder="Conditions, comportement, observations..."></textarea>
-
-                ${bouton("pcDiagEnregistrerMesures", "Enregistrer et analyser les mesures")}
-                <div id="pcDiagMesuresResultat" aria-live="polite"></div>
-            </div>
-        `;
-
-        connecterEvenements();
+    if(t<Math.min(t1,t2)||t>Math.max(t1,t2)){
+      out.innerHTML='<div class="pcd-alert">La température est hors des deux points saisis. Ne prolonge pas la courbe par extrapolation : saisis deux points constructeur qui encadrent la température.</div>';
+      return;
     }
 
-    function valeur(id) {
-        const element = document.getElementById(id);
-        return element ? element.value.trim() : "";
+    if((type==="NTC"&&t2>t1&&r2>=r1)||(type==="PTC"&&t2>t1&&r2<=r1)){
+      out.innerHTML='<div class="pcd-alert">Les points semblent incohérents avec le type NTC/PTC choisi. Vérifie la courbe du constructeur.</div>';
+      return;
     }
 
-    function rechercherCode() {
-        const marque = valeur("pcDiagMarque");
-        const modele = valeur("pcDiagModele");
-        const code = valeur("pcDiagCode");
-        const type = valeur("pcDiagType");
-        const resultat = document.getElementById("pcDiagCodeResultat");
+    const expected=r1+(t-t1)*(r2-r1)/(t2-t1);
+    const delta=Math.abs(m-expected)/expected*100;
+    let verdict="Tolérance non renseignée : écart calculé, conformité non déterminée.";
+    let cls="pcd-alert";
 
-        if (!marque || !code) {
-            resultat.innerHTML = `
-                <div class="pcdiag-warning">
-                    Sélectionne au minimum une marque et renseigne le code défaut.
-                </div>`;
-            return;
-        }
-
-        const recherche = [
-            marque,
-            type,
-            modele,
-            "code erreur",
-            code,
-            "notice technique PDF"
-        ].filter(Boolean).join(" ");
-
-        const url = "https://www.google.com/search?q=" + encodeURIComponent(recherche);
-
-        resultat.innerHTML = `
-            <div class="pcdiag-resultat">
-                <strong>Recherche documentaire lancée pour :</strong><br>
-                Fabricant : ${echapper(marque)}<br>
-                ${modele ? "Modèle : " + echapper(modele) + "<br>" : ""}
-                Code : ${echapper(code)}
-
-                <div class="pcdiag-warning">
-                    Le code n'est pas encore présent dans la base de défauts vérifiés de Pro Clim.
-                    Aucune signification ne sera inventée.
-                    Vérifie que la documentation correspond exactement à la référence et à la génération de l'appareil.
-                </div>
-
-                <a class="pcdiag-link" href="${url}" target="_blank" rel="noopener noreferrer">
-                    🔎 Rechercher la documentation et le code
-                </a>
-            </div>
-        `;
+    if(tolText!==""){
+      const tol=Number(tolText);
+      if(Number.isFinite(tol)&&tol>=0){
+        const ok=delta<=tol;
+        verdict=ok?`Dans la tolérance saisie (±${tol} %).`:`Hors de la tolérance saisie (±${tol} %). Vérifie conditions, câblage et sonde selon la notice.`;
+        if(ok)cls+=" pcd-good";
+      }
     }
 
-    function demarrerDiagnostic() {
-        const symptomeLabel = valeur("pcDiagSymptome");
-        const symptome = SYMPTOMES.find(s => s.label === symptomeLabel);
+    out.innerHTML=`
+      <div class="pcd-result">
+        <strong>Résultat — interpolation entre deux points constructeur</strong>
+        <p>Température : ${t.toFixed(1)} °C</p>
+        <p>Résistance attendue estimée : ${expected.toFixed(1)} Ω</p>
+        <p>Résistance mesurée : ${m.toFixed(1)} Ω</p>
+        <p>Écart relatif : ${delta.toFixed(1)} %</p>
+        <div class="${cls}">${esc(verdict)}</div>
+        <p class="pcd-muted">${esc(val("bMarque"))} — ${esc(val("bModele"))} — carte ${esc(val("bCarte"))} — ${esc(val("bRepere"))} : ${esc(val("bFonction"))}. Source : ${esc(val("bSource"))}.</p>
+      </div>`;
+  }
 
-        const zone = document.getElementById("pcDiagParcours");
+  function showMeasurements(){
+    $("pcdParcours").hidden=true;
+    $("pcdMesures").hidden=false;
+    $("pcdBoard").hidden=true;
+    $("pcdMesures").innerHTML=`
+      <section class="pcd-card">
+        <h3>📏 Relevé des mesures</h3>
+        <div class="pcd-grid">
+          <label class="pcd-field">Température extérieure (°C)<input id="mExt" type="number" step="0.1"></label>
+          <label class="pcd-field">Température ambiante (°C)<input id="mAmb" type="number" step="0.1"></label>
+          <label class="pcd-field">Air repris (°C)<input id="mReprise" type="number" step="0.1"></label>
+          <label class="pcd-field">Air soufflé (°C)<input id="mSouffle" type="number" step="0.1"></label>
+          <label class="pcd-field">BP (bar)<input id="mBP" type="number" step="0.01"></label>
+          <label class="pcd-field">HP (bar)<input id="mHP" type="number" step="0.01"></label>
+          <label class="pcd-field">Intensité (A)<input id="mA" type="number" step="0.01"></label>
+          <label class="pcd-field">Tension (V)<input id="mV" type="number" step="0.1"></label>
+        </div>
+        <label class="pcd-field">Autres mesures / conditions<textarea id="mAutres" placeholder="Températures tuyauteries, fréquence, consigne, stabilisation…"></textarea></label>
+        <div class="pcd-alert">Les pressions dépendent du fluide, des températures, de la charge thermique et du régime inverter. Une pression isolée ne permet pas de conclure à un manque de charge.</div>
+        <button class="pcd-btn pcd-primary" data-action="report">Créer le compte rendu →</button>
+      </section>`;
+  }
 
-        if (!symptome) {
-            zone.innerHTML = `<div class="pcdiag-warning">Choisis d'abord le symptôme constaté.</div>`;
-            return;
-        }
+  function report(){
+    const p=PATHS[S.symptom];
+    const get=id=>$(id)?.value.trim()||"";
+    const lines=S.answers.map((a,i)=>`
+      <div class="pcd-result">
+        <strong>${i+1}. ${esc(p.steps[i][0])}</strong>
+        <p>${esc(a?.etat||"Non réalisé")}</p>
+        <p>${esc(a?.obs||"")}</p>
+      </div>`).join("");
 
-        const parcours = PARCOURS[symptome.value] || PARCOURS.autre;
-        diagnosticActif = true;
-        etapeDiagnostic = 0;
-        reponsesDiagnostic = [];
+    const fields=[
+      ["Marque",get("pcdMarque")],["Modèle",get("pcdModele")],
+      ["Type",get("pcdType")],["Fluide",get("pcdFluide")],
+      ["Code défaut",get("pcdCode")],["Contexte",get("pcdContexte")],
+      ["Température extérieure",get("mExt")+" °C"],
+      ["Température ambiante",get("mAmb")+" °C"],
+      ["Air repris",get("mReprise")+" °C"],
+      ["Air soufflé",get("mSouffle")+" °C"],
+      ["BP",get("mBP")+" bar"],["HP",get("mHP")+" bar"],
+      ["Intensité",get("mA")+" A"],["Tension",get("mV")+" V"],
+      ["Autres",get("mAutres")]
+    ].filter(x=>x[1]&&x[1]!==" °C"&&x[1]!==" bar"&&x[1]!==" A"&&x[1]!==" V");
 
-        afficherEtape(parcours);
+    $("pcdMesures").hidden=true;
+    const z=$("pcdRapportZone");
+    z.hidden=false;
+    z.innerHTML=`
+      <section class="pcd-card" id="pcdReport">
+        <div class="pcd-hero"><h2>PRO CLIM — Compte rendu dépannage</h2><p>${new Date().toLocaleString("fr-FR")}</p></div>
+        <h3>${esc(p.title)}</h3>
+        ${fields.map(x=>`<div class="pcd-result"><strong>${esc(x[0])} :</strong> ${esc(x[1])}</div>`).join("")}
+        <h3>Contrôles réalisés</h3>${lines}
+        <div class="pcd-alert">Compte rendu des observations saisies. La cause doit être confirmée avec les procédures et valeurs constructeur applicables.</div>
+      </section>
+      <button class="pcd-btn pcd-primary" data-action="copy">Copier le compte rendu</button>
+      <button class="pcd-btn pcd-secondary" data-action="print">Imprimer / enregistrer PDF</button>
+      <button class="pcd-btn pcd-secondary" data-action="home">Nouveau diagnostic</button>`;
+  }
+
+  function home(){
+    S.symptom="";
+    S.step=0;
+    S.answers=[];
+    ["pcdParcours","pcdBoard","pcdMesures","pcdRapportZone"].forEach(id=>$(id).hidden=true);
+    $("pcdAccueil").hidden=false;
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  async function copy(){
+    const text=$("pcdReport")?.innerText||"";
+    try{
+      await navigator.clipboard.writeText(text);
+      alert("Compte rendu copié.");
+    }catch(e){
+      alert("Copie indisponible. Sélectionne le texte du compte rendu.");
     }
+  }
 
-    function afficherEtape(parcours) {
-        const zone = document.getElementById("pcDiagParcours");
-
-        if (!diagnosticActif || etapeDiagnostic >= parcours.length) {
-            afficherFinDiagnostic();
-            return;
-        }
-
-        const etape = parcours[etapeDiagnostic];
-
-        zone.innerHTML = `
-            <div class="pcdiag-resultat">
-                <strong>Étape ${etapeDiagnostic + 1} / ${parcours.length}</strong>
-                <p>${echapper(etape.question)}</p>
-                <div class="pcdiag-grid">
-                    <button type="button" class="pcdiag-btn pcdiag-principal" id="pcDiagOui">Oui</button>
-                    <button type="button" class="pcdiag-btn pcdiag-secondaire" id="pcDiagNon">Non</button>
-                </div>
-                <button type="button" class="pcdiag-btn pcdiag-secondaire" id="pcDiagArreter">Arrêter le diagnostic</button>
-            </div>
-        `;
-
-        document.getElementById("pcDiagOui").addEventListener("click", () => repondre(true, parcours));
-        document.getElementById("pcDiagNon").addEventListener("click", () => repondre(false, parcours));
-        document.getElementById("pcDiagArreter").addEventListener("click", () => {
-            diagnosticActif = false;
-            zone.innerHTML = `<div class="pcdiag-resultat">Diagnostic interrompu.</div>`;
-        });
+  function click(e){
+    const b=e.target.closest("button");
+    if(!b||!$(PAGE)?.contains(b))return;
+    if(b.dataset.symptom){start(b.dataset.symptom);return;}
+    switch(b.dataset.action){
+      case "home":home();break;
+      case "open-board":openBoard();break;
+      case "calc-probe":calcProbe();break;
+      case "prev":saveStep();S.step=Math.max(0,S.step-1);showStep();break;
+      case "next":
+        saveStep();
+        if(S.step<PATHS[S.symptom].steps.length-1){S.step++;showStep();}
+        else showMeasurements();
+        break;
+      case "report":report();break;
+      case "copy":copy();break;
+      case "print":window.print();break;
     }
+  }
 
-    function repondre(oui, parcours) {
-        const etape = parcours[etapeDiagnostic];
+  function init(){
+    if(!$(PAGE)||$(PAGE).dataset.pcDiagnosticReady==="1")return;
+    styles();
+    if(build())$(PAGE).dataset.pcDiagnosticReady="1";
+  }
 
-        reponsesDiagnostic.push({
-            question: etape.question,
-            reponse: oui ? "Oui" : "Non",
-            conseil: oui ? etape.oui : etape.non
-        });
-
-        etapeDiagnostic++;
-
-        if (etapeDiagnostic < parcours.length) {
-            afficherEtape(parcours);
-        } else {
-            afficherFinDiagnostic();
-        }
-    }
-
-    function afficherFinDiagnostic() {
-        diagnosticActif = false;
-
-        const zone = document.getElementById("pcDiagParcours");
-
-        zone.innerHTML = `
-            <div class="pcdiag-resultat">
-                <strong>Compte rendu du parcours</strong>
-                ${reponsesDiagnostic.map((r, i) => `
-                    <p>
-                        <strong>${i + 1}. ${echapper(r.question)}</strong><br>
-                        Réponse : ${echapper(r.reponse)}<br>
-                        <span>${echapper(r.conseil)}</span>
-                    </p>
-                `).join("")}
-                <div class="pcdiag-warning">
-                    Ces indications orientent les contrôles mais ne constituent pas une conclusion de panne.
-                    Confirme chaque hypothèse par des mesures adaptées et la documentation constructeur.
-                </div>
-                <button type="button" class="pcdiag-btn pcdiag-principal" id="pcDiagRecommencer">
-                    Recommencer
-                </button>
-            </div>
-        `;
-
-        document.getElementById("pcDiagRecommencer").addEventListener("click", demarrerDiagnostic);
-    }
-
-    function enregistrerMesures() {
-        const ids = [
-            "pcDiagFluide", "pcDiagMode", "pcDiagExt", "pcDiagReprise",
-            "pcDiagSoufflage", "pcDiagBP", "pcDiagHP", "pcDiagAspiration",
-            "pcDiagLiquide", "pcDiagIntensite", "pcDiagNotes"
-        ];
-
-        const mesures = {};
-        ids.forEach(id => mesures[id] = valeur(id));
-
-        const zone = document.getElementById("pcDiagMesuresResultat");
-        const reprise = parseFloat(mesures.pcDiagReprise);
-        const soufflage = parseFloat(mesures.pcDiagSoufflage);
-
-        let analyse = "";
-
-        if (Number.isFinite(reprise) && Number.isFinite(soufflage)) {
-            const delta = reprise - soufflage;
-            analyse += `
-                <p><strong>Écart reprise / soufflage :</strong> ${delta.toFixed(1)} °C</p>
-                <p class="pcdiag-small">
-                    Écart calculé à partir des deux températures saisies.
-                    Son interprétation dépend du mode, du débit d'air, de la charge thermique et de la stabilisation.
-                </p>
-            `;
-        } else {
-            analyse += `<p>Renseigne les températures de reprise et de soufflage pour calculer leur écart.</p>`;
-        }
-
-        const champsRenseignes = Object.values(mesures).filter(v => v !== "").length;
-
-        zone.innerHTML = `
-            <div class="pcdiag-resultat">
-                <strong>Relevé enregistré dans cette session.</strong>
-                <p>${champsRenseignes} champ(s) renseigné(s).</p>
-                ${analyse}
-                <div class="pcdiag-warning">
-                    Les pressions seules ne permettent pas de conclure à un manque de fluide ou à une restriction.
-                    Pour calculer la surchauffe et le sous-refroidissement, il faut convertir les pressions en températures
-                    de saturation avec les bonnes tables pression/température du fluide et tenir compte du glide
-                    des mélanges. Cette version ne fait pas encore ce calcul.
-                </div>
-                <p class="pcdiag-small">
-                    Les valeurs ne sont pas encore synchronisées ni conservées après fermeture de la page.
-                </p>
-            </div>
-        `;
-
-        console.log("Pro Clim — Relevé de mesures :", mesures);
-    }
-
-    function connecterEvenements() {
-        document.getElementById("pcDiagRechercher")
-            .addEventListener("click", rechercherCode);
-
-        document.getElementById("pcDiagDemarrer")
-            .addEventListener("click", demarrerDiagnostic);
-
-        document.getElementById("pcDiagEnregistrerMesures")
-            .addEventListener("click", enregistrerMesures);
-
-        document.getElementById("pcDiagPhoto")
-            .addEventListener("change", function () {
-                const fichier = this.files && this.files[0];
-                document.getElementById("pcDiagPhotoNom").textContent =
-                    fichier ? "Photo sélectionnée : " + fichier.name : "Aucune photo sélectionnée.";
-            });
-    }
-
-    function initialiser() {
-        afficherInterface();
-    }
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initialiser);
-    } else {
-        initialiser();
-    }
-
+  document.addEventListener("click",click);
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);
+  else init();
 })();
