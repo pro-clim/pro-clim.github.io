@@ -1,7 +1,7 @@
 
 /* ==========================================================
-   PRO CLIM — ASSISTANT CHANTIER V6
-   Menu déroulant des références constructeur
+   PRO CLIM — ASSISTANT CHANTIER V7
+   Références constructeur + accessoires déroulants
    Daikin VRV 5-S — RXYSA4~6A7V/Y1B
    Recherche documentaire + accessoires Refnet
    ========================================================== */
@@ -296,10 +296,8 @@
        RÉFÉRENCES DISPONIBLES POUR LA GAMME
     ====================================================== */
 
-    function referencesDisponibles(marque, gamme) {
-        const refs = [];
-
-        DOCUMENTS.forEach(doc => {
+    function documentsDisponibles(marque, gamme) {
+        return DOCUMENTS.filter(doc => {
             const marqueOK =
                 normaliser(doc.marque) === normaliser(marque);
 
@@ -308,11 +306,17 @@
                     normaliser(g) === normaliser(gamme)
                 );
 
-            if (marqueOK && gammeOK) {
-                doc.modeles.forEach(ref => {
-                    if (!refs.includes(ref)) refs.push(ref);
-                });
-            }
+            return marqueOK && gammeOK;
+        });
+    }
+
+    function referencesDisponibles(marque, gamme) {
+        const refs = [];
+
+        documentsDisponibles(marque, gamme).forEach(doc => {
+            doc.modeles.forEach(ref => {
+                if (!refs.includes(ref)) refs.push(ref);
+            });
         });
 
         return refs;
@@ -348,6 +352,7 @@
         select.appendChild(optionManuelle);
 
         const valeur = String(valeurSouhaitee || "").trim();
+
         const correspondance = refs.find(ref =>
             codeNormalise(ref) === codeNormalise(valeur)
         );
@@ -382,8 +387,91 @@
         sauvegarderDepuisChamps();
     }
 
+    /* ======================================================
+       ACCESSOIRES DISPONIBLES POUR LA GAMME
+    ====================================================== */
+
+    function accessoiresDisponibles(marque, gamme) {
+        const refs = [];
+
+        documentsDisponibles(marque, gamme).forEach(doc => {
+            (doc.accessoires || []).forEach(ref => {
+                if (!refs.includes(ref)) refs.push(ref);
+            });
+        });
+
+        return refs;
+    }
+
+    function actualiserAccessoires(valeurSouhaitee = "") {
+        const select = $("chantierAccessoire");
+        const saisie = $("chantierAccessoireManuel");
+
+        if (!select || !saisie) return;
+
+        const marque = $("chantierMarque").value;
+        const gamme = $("chantierGamme").value;
+
+        const refs = accessoiresDisponibles(marque, gamme);
+
+        select.innerHTML =
+            `<option value="">Aucun accessoire sélectionné</option>`;
+
+        refs.forEach(ref => {
+            const option = document.createElement("option");
+            option.value = ref;
+            option.textContent = ref;
+            select.appendChild(option);
+        });
+
+        const optionManuelle = document.createElement("option");
+        optionManuelle.value = MANUEL;
+        optionManuelle.textContent =
+            refs.length
+                ? "Autre accessoire — saisie manuelle"
+                : "Accessoire non répertorié — saisie manuelle";
+
+        select.appendChild(optionManuelle);
+
+        const valeur = String(valeurSouhaitee || "").trim();
+
+        const correspondance = refs.find(ref =>
+            codeNormalise(ref) === codeNormalise(valeur)
+        );
+
+        if (correspondance) {
+            select.value = correspondance;
+            saisie.value = "";
+            saisie.hidden = true;
+        } else if (valeur) {
+            select.value = MANUEL;
+            saisie.value = valeur;
+            saisie.hidden = false;
+        } else {
+            select.value = "";
+            saisie.value = "";
+            saisie.hidden = true;
+        }
+    }
+
+    function gererChoixAccessoire() {
+        const select = $("chantierAccessoire");
+        const saisie = $("chantierAccessoireManuel");
+
+        if (select.value === MANUEL) {
+            saisie.hidden = false;
+            saisie.focus();
+        } else {
+            saisie.hidden = true;
+            saisie.value = "";
+        }
+
+        sauvegarderDepuisChamps();
+    }
+
     function sauvegarderDepuisChamps() {
         if (!$("chantierMarque")) return;
+
         Object.assign(state, lireMateriel());
         sauvegarder();
     }
@@ -467,6 +555,7 @@
                     <input id="chantierModeleManuel"
                         placeholder="Saisir la référence exacte"
                         hidden>
+
                     <small class="step-description">
                         Les références proposées dépendent de la documentation
                         intégrée dans Pro Clim. Les autres modèles restent
@@ -478,8 +567,20 @@
                     <label for="chantierAccessoire">
                         Accessoire concerné
                     </label>
-                    <input id="chantierAccessoire"
-                        placeholder="Ex. KHRQ22M20TA / KHRQ22M29H">
+
+                    <select id="chantierAccessoire">
+                        <option value="">Aucun accessoire sélectionné</option>
+                    </select>
+
+                    <input id="chantierAccessoireManuel"
+                        placeholder="Saisir la référence exacte de l'accessoire"
+                        hidden>
+
+                    <small class="step-description">
+                        Les accessoires proposés dépendent des fiches
+                        documentaires intégrées. Les autres références
+                        peuvent être saisies manuellement.
+                    </small>
                 </div>
 
                 <div class="field">
@@ -719,7 +820,12 @@
 
         $("chantierGamme").addEventListener("change", () => {
             state.gamme = $("chantierGamme").value;
+            state.modele = "";
+            state.accessoire = "";
+
             actualiserReferences("");
+            actualiserAccessoires("");
+
             sauvegarderDepuisChamps();
         });
 
@@ -733,8 +839,17 @@
             sauvegarderDepuisChamps
         );
 
+        $("chantierAccessoire").addEventListener(
+            "change",
+            gererChoixAccessoire
+        );
+
+        $("chantierAccessoireManuel").addEventListener(
+            "input",
+            sauvegarderDepuisChamps
+        );
+
         [
-            "chantierAccessoire",
             "chantierInstallation",
             "chantierFluide"
         ].forEach(id => {
@@ -790,10 +905,15 @@
         if (reinitialiserGamme) {
             state.gamme = "";
             state.modele = "";
+            state.accessoire = "";
         }
 
         actualiserReferences(
             reinitialiserGamme ? "" : state.modele
+        );
+
+        actualiserAccessoires(
+            reinitialiserGamme ? "" : state.accessoire
         );
 
         sauvegarderDepuisChamps();
@@ -807,9 +927,7 @@
         $("chantierGamme").value = state.gamme || "";
 
         actualiserReferences(state.modele || "");
-
-        $("chantierAccessoire").value =
-            state.accessoire || "";
+        actualiserAccessoires(state.accessoire || "");
 
         $("chantierInstallation").value =
             state.installation || "";
@@ -819,17 +937,22 @@
     }
 
     function lireMateriel() {
-        const choix = $("chantierModele").value;
+        const choixModele = $("chantierModele").value;
+        const choixAccessoire = $("chantierAccessoire").value;
 
-        const modele = choix === MANUEL
+        const modele = choixModele === MANUEL
             ? $("chantierModeleManuel").value.trim()
-            : choix;
+            : choixModele;
+
+        const accessoire = choixAccessoire === MANUEL
+            ? $("chantierAccessoireManuel").value.trim()
+            : choixAccessoire;
 
         return {
             marque: $("chantierMarque").value,
             gamme: $("chantierGamme").value,
             modele,
-            accessoire: $("chantierAccessoire").value.trim(),
+            accessoire,
             installation: $("chantierInstallation").value,
             fluide: $("chantierFluide").value
         };
