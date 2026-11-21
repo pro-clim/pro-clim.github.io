@@ -1,8 +1,9 @@
 
 /* ==========================================================
    PRO CLIM — DIAGNOSTIC CVC
-   Moteur guidé + base documentaire constructeur
-   Version 1.0 — Menus en cascade et parcours adaptatif
+   Moteur multimarque — menus constructeurs en cascade
+   Constructeur > Famille > Modèle > Code défaut
+   Parcours adaptatif + composants + mesures + rapport
    ========================================================== */
 
 (() => {
@@ -24,13 +25,264 @@
   };
 
   /* ========================================================
-     1. BASE DOCUMENTAIRE CONSTRUCTEUR
-     Une procédure n'est disponible que si elle est intégrée.
+     1. CATALOGUE DES CONSTRUCTEURS ET FAMILLES
+     Les familles sont des entrées de navigation.
+     Elles ne signifient pas que les procédures sont intégrées.
+     ======================================================== */
+
+  const FAMILY_CATALOG = {
+
+    "Daikin": [
+      "Résidentiel — Split mural",
+      "Résidentiel — Multi-split",
+      "Sky Air — Alpha",
+      "Sky Air — Advance",
+      "Sky Air — Active",
+      "Sky Air — Anciennes générations",
+      "VRV — VRV IV",
+      "VRV — VRV IV+",
+      "VRV — VRV 5-S",
+      "VRV — VRV 5 Heat Pump",
+      "VRV — VRV 5 Heat Recovery",
+      "VRV — Autres générations",
+      "Altherma — Air/eau",
+      "Altherma — Hybride",
+      "Altherma — Géothermie",
+      "Rooftop",
+      "Groupes froids / Chillers",
+      "Ventilation / VMC",
+      "CTA / Traitement d'air"
+    ],
+
+    "Mitsubishi Electric": [
+      "Résidentiel — M Series",
+      "Résidentiel — Mr Slim",
+      "Commercial — Mr Slim",
+      "DRV — City Multi R2",
+      "DRV — City Multi Y",
+      "DRV — City Multi anciennes générations",
+      "PAC air/eau — Ecodan",
+      "Ventilation — Lossnay",
+      "Autres systèmes"
+    ],
+
+    "Mitsubishi Heavy Industries": [
+      "Résidentiel — Split",
+      "Résidentiel — Multi-split",
+      "Commercial — PAC",
+      "DRV — KX",
+      "PAC air/eau",
+      "Autres systèmes"
+    ],
+
+    "Samsung": [
+      "Résidentiel — Split",
+      "Résidentiel — Multi-split",
+      "Commercial — CAC",
+      "Gainable / Cassette",
+      "DRV — DVM S",
+      "DRV — DVM S2",
+      "PAC air/eau — EHS",
+      "Autres systèmes"
+    ],
+
+    "Atlantic / Fujitsu": [
+      "Résidentiel — Takao",
+      "Résidentiel — Split",
+      "Multi-split",
+      "Gainable",
+      "Cassette / Plafonnier",
+      "DRV — Airstage",
+      "PAC air/eau — Alféa",
+      "Ventilation",
+      "Autres systèmes"
+    ],
+
+    "LG": [
+      "Résidentiel — Split",
+      "Résidentiel — Multi-split",
+      "Commercial — Single Split",
+      "Commercial — Multi V",
+      "DRV — Multi V",
+      "PAC air/eau — Therma V",
+      "Ventilation / CTA",
+      "Autres systèmes"
+    ],
+
+    "Panasonic": [
+      "Résidentiel — Etherea",
+      "Résidentiel — TZ",
+      "Multi-split",
+      "Commercial — PACi",
+      "DRV — ECOi",
+      "PAC air/eau — Aquarea",
+      "Ventilation",
+      "Autres systèmes"
+    ],
+
+    "Toshiba": [
+      "Résidentiel — Seiya",
+      "Résidentiel — Shorai",
+      "Multi-split",
+      "Commercial — Digital Inverter",
+      "Commercial — Super Digital Inverter",
+      "DRV — SMMS",
+      "PAC air/eau",
+      "Ventilation",
+      "Autres systèmes"
+    ],
+
+    "Hitachi": [
+      "Résidentiel — Split",
+      "Résidentiel — Multi-split",
+      "Commercial — Set Free",
+      "DRV — Set Free",
+      "PAC air/eau — Yutaki",
+      "Ventilation",
+      "Autres systèmes"
+    ],
+
+    "Toshiba Carrier": [
+      "Résidentiel — Split",
+      "Multi-split",
+      "Commercial — PAC",
+      "DRV",
+      "Rooftop",
+      "Groupes froids",
+      "Autres systèmes"
+    ],
+
+    "Midea": [
+      "Résidentiel — Split",
+      "Résidentiel — Multi-split",
+      "Commercial — Light Commercial",
+      "DRV — V6",
+      "DRV — V8",
+      "PAC air/eau — M-Thermal",
+      "Rooftop",
+      "Autres systèmes"
+    ],
+
+    "Gree": [
+      "Résidentiel — Split",
+      "Résidentiel — Multi-split",
+      "Commercial — U-Match",
+      "DRV — GMV",
+      "PAC air/eau",
+      "Chillers",
+      "Autres systèmes"
+    ],
+
+    "Haier": [
+      "Résidentiel — Split",
+      "Résidentiel — Multi-split",
+      "Commercial — MRV",
+      "DRV — MRV",
+      "PAC air/eau",
+      "Ventilation",
+      "Autres systèmes"
+    ],
+
+    "Hisense": [
+      "Résidentiel — Split",
+      "Multi-split",
+      "Commercial — PAC",
+      "DRV",
+      "PAC air/eau",
+      "Autres systèmes"
+    ],
+
+    "Carrier": [
+      "Résidentiel — Split",
+      "Multi-split",
+      "Commercial — PAC",
+      "DRV / VRF",
+      "Rooftop",
+      "Groupes froids / Chillers",
+      "CTA / Traitement d'air",
+      "Autres systèmes"
+    ],
+
+    "Trane": [
+      "DRV / VRF",
+      "Rooftop",
+      "Groupes froids / Chillers",
+      "PAC",
+      "CTA / Traitement d'air",
+      "Autres systèmes"
+    ],
+
+    "York": [
+      "Résidentiel — Split",
+      "Commercial — PAC",
+      "DRV / VRF",
+      "Rooftop",
+      "Groupes froids / Chillers",
+      "CTA / Traitement d'air",
+      "Autres systèmes"
+    ],
+
+    "Lennox": [
+      "Résidentiel — Split",
+      "Commercial — PAC",
+      "DRV / VRF",
+      "Rooftop",
+      "CTA / Traitement d'air",
+      "Autres systèmes"
+    ],
+
+    "Bosch": [
+      "Résidentiel — Climate",
+      "Commercial — Climate",
+      "PAC air/eau — Compress",
+      "PAC air/eau — Compress Hybrid",
+      "Ventilation",
+      "Autres systèmes"
+    ],
+
+    "Autre marque": [
+      "Split",
+      "Multi-split",
+      "Gainable",
+      "Cassette",
+      "Plafonnier",
+      "DRV / VRV",
+      "PAC air/eau",
+      "Rooftop",
+      "Groupe froid / Chiller",
+      "CTA / Ventilation",
+      "Autre système"
+    ]
+  };
+
+  const BRANDS = Object.keys(FAMILY_CATALOG);
+
+  const TYPES = [
+    "Split mural",
+    "Multi-split",
+    "Gainable",
+    "Cassette",
+    "Console",
+    "Plafonnier",
+    "DRV / VRV",
+    "PAC air/eau",
+    "Rooftop",
+    "Groupe froid / Chiller",
+    "CTA / Ventilation",
+    "Autre"
+  ];
+
+  /* ========================================================
+     2. BASE DES PROCÉDURES DOCUMENTÉES
+     Une entrée ici doit correspondre à une documentation précise.
      ======================================================== */
 
   const DATABASE = {
+
     "Daikin": {
-      "VRV 5-S": {
+
+      "VRV — VRV 5-S": {
+
         models: [
           "RXYSA4A7V1B",
           "RXYSA5A7V1B",
@@ -41,17 +293,26 @@
         ],
 
         codes: {
+
           "U4-01": {
-            title: "Erreur de transmission entre unités intérieures et unité extérieure",
+
+            models: [
+              "RXYSA4A7V1B",
+              "RXYSA5A7V1B",
+              "RXYSA6A7V1B",
+              "RXYSA4A7Y1B",
+              "RXYSA5A7Y1B",
+              "RXYSA6A7Y1B"
+            ],
+
+            title:
+              "Erreur de transmission entre unités intérieures et unité extérieure",
 
             meaning:
               "La carte principale détecte une transmission anormale sur la ligne F1-F2 vers les unités intérieures.",
 
             effect:
               "Le système peut s'arrêter de fonctionner.",
-
-            reset:
-              "Réinitialisation automatique selon les conditions de fonctionnement.",
 
             source: {
               manufacturer: "Daikin",
@@ -81,7 +342,7 @@
 
                 noTitle: "Anomalie d'alimentation",
                 noText:
-                  "Rechercher et corriger le défaut d'alimentation : déséquilibre, chute de tension, perturbation ou court-circuit. Ne pas poursuivre le diagnostic tant que cette anomalie subsiste.",
+                  "Rechercher et corriger le défaut d'alimentation : déséquilibre, chute de tension, perturbation ou court-circuit. Ne pas poursuivre tant que cette anomalie subsiste.",
 
                 reference: "§ 5.1 — Electrical circuit"
               },
@@ -116,14 +377,14 @@
                   "Consulter le réglage terrain 1-10 de l'unité extérieure pour contrôler le nombre d'unités intérieures détectées.",
 
                 detail:
-                  "Si le nombre détecté est inférieur au nombre attendu, le constructeur demande de contrôler les unités intérieures qui pourraient être privées d'alimentation ou présenter une carte électronique défectueuse.",
+                  "Si le nombre détecté est inférieur au nombre attendu, contrôler les unités intérieures qui pourraient être privées d'alimentation ou présenter une carte électronique défectueuse.",
 
                 yesLabel: "Oui, nombre identique",
                 noLabel: "Non, il manque une ou plusieurs unités",
 
                 noTitle: "Unité intérieure non détectée",
                 noText:
-                  "Identifier les unités manquantes. Contrôler leur alimentation électrique puis, si nécessaire, leur carte électronique principale. Le défaut peut provenir d'une unité non alimentée ou d'une carte défectueuse.",
+                  "Identifier les unités manquantes. Contrôler leur alimentation électrique puis, si nécessaire, leur carte électronique principale.",
 
                 reference: "Réglage 1-10 — § 7.9 ; § 4.14"
               },
@@ -158,7 +419,7 @@
                   "Effectuer une réinitialisation électrique conformément aux prescriptions constructeur, puis observer le fonctionnement du système.",
 
                 detail:
-                  "Si le défaut disparaît puis réapparaît après un certain temps, le manuel demande de rechercher une source externe de perturbation électrique.",
+                  "Si le défaut disparaît puis réapparaît après un certain temps, rechercher une source externe de perturbation électrique.",
 
                 yesLabel: "Oui, le défaut réapparaît",
                 noLabel: "Non, le défaut ne réapparaît pas",
@@ -185,7 +446,7 @@
                   "Régler le paramètre terrain 2-5 de l'unité extérieure sur 1 pour lancer les unités intérieures raccordées en ventilation forcée.",
 
                 detail:
-                  "Si une unité ne fonctionne pas, le constructeur demande de vérifier si elle est privée d'alimentation ou si sa carte électronique est défectueuse.",
+                  "Si une unité ne fonctionne pas, vérifier si elle est privée d'alimentation ou si sa carte électronique est défectueuse.",
 
                 yesLabel: "Oui, toutes les unités démarrent",
                 noLabel: "Non, une ou plusieurs unités ne démarrent pas",
@@ -204,43 +465,23 @@
   };
 
   /* ========================================================
-     2. LISTES ET OUTILS GÉNÉRAUX
+     3. OUTILS DE SÉLECTION
      ======================================================== */
 
-  const BRANDS = [
-    "Daikin",
-    "Mitsubishi Electric",
-    "Mitsubishi Heavy Industries",
-    "Samsung",
-    "Atlantic / Fujitsu",
-    "LG",
-    "Panasonic",
-    "Toshiba",
-    "Hitachi",
-    "Toshiba Carrier",
-    "Midea",
-    "Gree",
-    "Haier",
-    "Hisense",
-    "Carrier",
-    "Trane",
-    "York",
-    "Lennox",
-    "Bosch",
-    "Autre marque"
-  ];
+  const OPTIONS = (items, selected = "") =>
+    items.map(value =>
+      `<option value="${esc(value)}" ${value === selected ? "selected" : ""}>${esc(value)}</option>`
+    ).join("");
 
-  const TYPES = [
-    "Split mural",
-    "Multi-split",
-    "Gainable",
-    "Cassette",
-    "Console",
-    "Plafonnier",
-    "DRV / VRV",
-    "PAC air/eau",
-    "Autre"
-  ];
+  const BRAND_OPTIONS = `
+    <option value="">Sélectionner un constructeur</option>
+    ${OPTIONS(BRANDS)}
+  `;
+
+  const TYPE_OPTIONS = `
+    <option value="">Sélectionner un type</option>
+    ${OPTIONS(TYPES)}
+  `;
 
   const COMPONENTS = [
     ["Sonde de température d'air", "NTC"],
@@ -264,21 +505,6 @@
     ["Autre composant", "autre"]
   ];
 
-  const OPTIONS = (items, selected = "") =>
-    items.map(value =>
-      `<option value="${esc(value)}" ${value === selected ? "selected" : ""}>${esc(value)}</option>`
-    ).join("");
-
-  const BRAND_OPTIONS = `
-    <option value="">Sélectionner un constructeur</option>
-    ${OPTIONS(BRANDS)}
-  `;
-
-  const TYPE_OPTIONS = `
-    <option value="">Sélectionner un type</option>
-    ${OPTIONS(TYPES)}
-  `;
-
   const COMPONENT_OPTIONS = `
     <option value="">Sélectionner un composant</option>
     ${COMPONENTS.map(component =>
@@ -289,10 +515,12 @@
   `;
 
   /* ========================================================
-     3. PARCOURS PAR SYMPTÔME
+     4. PARCOURS GÉNÉRAUX PAR SYMPTÔME
+     Aide généraliste, distincte des procédures constructeur.
      ======================================================== */
 
   const PATHS = {
+
     froid: {
       title: "Ne fait plus de froid",
       steps: [
@@ -363,7 +591,7 @@
   };
 
   /* ========================================================
-     4. STYLE
+     5. STYLE
      ======================================================== */
 
   function styles() {
@@ -397,9 +625,7 @@
         margin-bottom:12px;
       }
 
-      #${PAGE} .pcd-hero h2 {
-        margin:0 0 5px;
-      }
+      #${PAGE} .pcd-hero h2 { margin:0 0 5px; }
 
       #${PAGE} .pcd-muted {
         color:#64748b;
@@ -436,9 +662,7 @@
         font-weight:400;
       }
 
-      #${PAGE} .pcd-field textarea {
-        min-height:75px;
-      }
+      #${PAGE} .pcd-field textarea { min-height:75px; }
 
       #${PAGE} .pcd-symptoms {
         display:grid;
@@ -456,9 +680,7 @@
         cursor:pointer;
       }
 
-      #${PAGE} .pcd-btn {
-        width:100%;
-      }
+      #${PAGE} .pcd-btn { width:100%; }
 
       #${PAGE} .pcd-primary {
         background:#0D47A1;
@@ -515,9 +737,7 @@
         gap:8px;
       }
 
-      #${PAGE} .pcd-actions>* {
-        flex:1;
-      }
+      #${PAGE} .pcd-actions>* { flex:1; }
 
       #${PAGE} .pcd-fault-code {
         font-size:27px;
@@ -552,7 +772,7 @@
         border-radius:10px;
         padding:15px 8px;
         font-weight:900;
-        font-size:15px;
+        font-size:14px;
         cursor:pointer;
       }
 
@@ -596,14 +816,18 @@
         margin:3px 0;
       }
 
-      #${PAGE} .pcd-disabled {
-        opacity:.55;
+      #${PAGE} .pcd-status {
+        border-radius:9px;
+        background:#f1f5f9;
+        color:#334155;
+        padding:10px;
+        font-size:12px;
+        line-height:1.5;
+        margin:10px 0;
       }
 
       @media(max-width:520px) {
-        #${PAGE} .pcd-grid {
-          grid-template-columns:1fr 1fr;
-        }
+        #${PAGE} .pcd-grid { grid-template-columns:1fr 1fr; }
       }
     `;
 
@@ -611,7 +835,7 @@
   }
 
   /* ========================================================
-     5. CONSTRUCTION DE LA PAGE
+     6. CONSTRUCTION DE LA PAGE
      ======================================================== */
 
   function build() {
@@ -632,19 +856,17 @@
             <h3>🔎 Diagnostic par code défaut</h3>
 
             <p class="pcd-muted">
-              Sélectionne le constructeur, la gamme, le modèle et le code affiché.
-              Pro Clim ouvre ensuite le parcours correspondant à la documentation disponible.
+              Sélectionne le constructeur, sa famille, le modèle exact et le code affiché.
+              Le parcours n'est proposé que si une procédure est intégrée.
             </p>
 
             <label class="pcd-field">
               1. Constructeur
-              <select id="pcdMarque">
-                ${BRAND_OPTIONS}
-              </select>
+              <select id="pcdMarque">${BRAND_OPTIONS}</select>
             </label>
 
             <label class="pcd-field">
-              2. Gamme / système
+              2. Famille / gamme
               <select id="pcdGamme" disabled>
                 <option value="">Choisir d'abord le constructeur</option>
               </select>
@@ -653,7 +875,7 @@
             <label class="pcd-field">
               3. Modèle exact
               <select id="pcdModele" disabled>
-                <option value="">Choisir d'abord la gamme</option>
+                <option value="">Choisir d'abord la famille</option>
               </select>
             </label>
 
@@ -664,11 +886,13 @@
               </select>
             </label>
 
+            <div id="pcdEtatDocumentation" class="pcd-status">
+              Sélectionne un constructeur pour afficher son catalogue.
+            </div>
+
             <label class="pcd-field">
               Type d'installation
-              <select id="pcdType">
-                ${TYPE_OPTIONS}
-              </select>
+              <select id="pcdType">${TYPE_OPTIONS}</select>
             </label>
 
             <label class="pcd-field">
@@ -681,7 +905,8 @@
 
             <label class="pcd-field">
               Contexte de la panne
-              <textarea id="pcdContexte" placeholder="Depuis quand ? Conditions d'apparition ? Intervention récente ?"></textarea>
+              <textarea id="pcdContexte"
+                placeholder="Depuis quand ? Conditions d'apparition ? Intervention récente ?"></textarea>
             </label>
 
             <button class="pcd-btn pcd-primary" data-action="analyze-code">
@@ -693,6 +918,10 @@
 
           <section class="pcd-card">
             <h3>Quel est le symptôme ?</h3>
+            <p class="pcd-muted">
+              Parcours généraliste d'aide au diagnostic, indépendant des procédures constructeur.
+            </p>
+
             <div class="pcd-symptoms">
               ${Object.entries(PATHS).map(([key, value]) =>
                 `<button class="pcd-symptom" data-symptom="${key}">
@@ -733,7 +962,7 @@
   }
 
   /* ========================================================
-     6. MENUS DÉROULANTS EN CASCADE
+     7. MENUS DÉROULANTS EN CASCADE
      ======================================================== */
 
   function fillSelect(id, values, placeholder) {
@@ -751,39 +980,63 @@
 
   function updateBrands() {
     const brand = $("pcdMarque").value;
-    const families = Object.keys(DATABASE[brand] || {});
+    const families = FAMILY_CATALOG[brand] || [];
 
     fillSelect(
       "pcdGamme",
       families,
       families.length
-        ? "Sélectionner une gamme"
-        : "Documentation non intégrée pour cette marque"
+        ? "Sélectionner une famille"
+        : "Aucune famille disponible"
     );
 
-    fillSelect("pcdModele", [], "Sélectionner d'abord la gamme");
+    fillSelect("pcdModele", [], "Sélectionner d'abord la famille");
     fillSelect("pcdCode", [], "Sélectionner d'abord le modèle");
 
     $("pcdResultatCode").innerHTML = "";
+
+    $("pcdEtatDocumentation").innerHTML = brand
+      ? `<strong>${esc(brand)}</strong> : ${families.length} familles disponibles dans le catalogue. Les modèles et codes ne sont proposés que lorsqu'ils sont intégrés et documentés.`
+      : "Sélectionne un constructeur pour afficher son catalogue.";
   }
 
   function updateFamilies() {
     const brand = $("pcdMarque").value;
     const family = $("pcdGamme").value;
 
-    const models = DATABASE[brand]?.[family]?.models || [];
+    const entry = DATABASE[brand]?.[family];
+    const models = entry?.models || [];
 
     fillSelect(
       "pcdModele",
       models,
       models.length
         ? "Sélectionner un modèle exact"
-        : "Aucun modèle intégré"
+        : "Modèles non intégrés pour cette famille"
     );
 
     fillSelect("pcdCode", [], "Sélectionner d'abord le modèle");
 
     $("pcdResultatCode").innerHTML = "";
+
+    if (!family) {
+      $("pcdEtatDocumentation").innerHTML =
+        "Sélectionne une famille pour continuer.";
+      return;
+    }
+
+    if (!entry) {
+      $("pcdEtatDocumentation").innerHTML =
+        `<strong>${esc(brand)} — ${esc(family)}</strong><br>
+        Famille présente dans le catalogue de navigation.
+        Les références exactes et procédures constructeur restent à intégrer.
+        Aucun code défaut n'est inventé.`;
+      return;
+    }
+
+    $("pcdEtatDocumentation").innerHTML =
+      `<strong>${esc(brand)} — ${esc(family)}</strong><br>
+      ${models.length} modèle(s) actuellement intégré(s) dans la base documentaire.`;
   }
 
   function updateModels() {
@@ -791,22 +1044,38 @@
     const family = $("pcdGamme").value;
     const model = $("pcdModele").value;
 
-    const codes = DATABASE[brand]?.[family]?.codes || {};
-    const available = Object.keys(codes);
+    const entry = DATABASE[brand]?.[family];
+    const codes = entry?.codes || {};
+
+    const available = Object.keys(codes).filter(code => {
+      const procedure = codes[code];
+      return !procedure.models || procedure.models.includes(model);
+    });
 
     fillSelect(
       "pcdCode",
       available,
       available.length
         ? "Sélectionner le code défaut"
-        : "Aucun code documenté"
+        : "Aucun code intégré pour ce modèle"
     );
 
     $("pcdResultatCode").innerHTML = "";
+
+    if (!model) {
+      $("pcdEtatDocumentation").innerHTML =
+        "Sélectionne un modèle exact.";
+      return;
+    }
+
+    $("pcdEtatDocumentation").innerHTML =
+      available.length
+        ? `<strong>${esc(model)}</strong><br>${available.length} code(s) avec procédure actuellement intégrée.`
+        : `<strong>${esc(model)}</strong><br>Aucune procédure de code défaut intégrée pour cette référence.`;
   }
 
   /* ========================================================
-     7. RÉCUPÉRATION DE LA PROCÉDURE
+     8. RÉCUPÉRATION ET LANCEMENT DE LA PROCÉDURE
      ======================================================== */
 
   function getSelectedProcedure() {
@@ -819,6 +1088,10 @@
       DATABASE[brand]?.[family]?.codes?.[code];
 
     if (!procedure) return null;
+
+    if (procedure.models && !procedure.models.includes(model)) {
+      return null;
+    }
 
     return {
       ...procedure,
@@ -841,7 +1114,7 @@
       out.innerHTML = `
         <div class="pcd-alert">
           Termine les quatre sélections :
-          constructeur, gamme, modèle et code défaut.
+          constructeur, famille, modèle et code défaut.
         </div>`;
       return;
     }
@@ -880,7 +1153,7 @@
   }
 
   /* ========================================================
-     8. AFFICHAGE D'UNE SEULE QUESTION
+     9. AFFICHAGE D'UNE SEULE QUESTION
      ======================================================== */
 
   function renderFaultStep() {
@@ -907,9 +1180,7 @@
 
         <h3>${esc(p.title)}</h3>
 
-        <p class="pcd-muted">
-          Modèle : ${esc(f.model)}
-        </p>
+        <p class="pcd-muted">Modèle : ${esc(f.model)}</p>
 
         <div class="pcd-alert">
           <strong>Signification constructeur</strong><br>
@@ -926,9 +1197,7 @@
 
         <div class="pcd-fault-step">
 
-          <p class="pcd-small">
-            <strong>CONTRÔLE À EFFECTUER</strong>
-          </p>
+          <p class="pcd-small"><strong>CONTRÔLE À EFFECTUER</strong></p>
 
           <h4>${esc(step.title)}</h4>
 
@@ -957,7 +1226,7 @@
         </div>
 
         <p class="pcd-small">
-          Réponds uniquement après avoir effectué le contrôle.
+          Réponds après avoir effectué le contrôle.
           La prochaine étape dépendra de ta réponse.
         </p>
 
@@ -973,7 +1242,7 @@
   }
 
   /* ========================================================
-     9. LOGIQUE OUI / NON
+     10. LOGIQUE OUI / NON
      ======================================================== */
 
   function faultChoice(answer) {
@@ -998,11 +1267,7 @@
         : step.yesBranch !== true;
 
     if (goesToBranch) {
-      f.branch = {
-        step,
-        historyItem
-      };
-
+      f.branch = { step, historyItem };
       renderFaultBranch();
       return;
     }
@@ -1017,25 +1282,19 @@
     renderFaultStep();
   }
 
-  /* ========================================================
-     10. BRANCHE ANOMALIE
-     ======================================================== */
-
   function renderFaultBranch() {
     const f = S.fault;
     if (!f || !f.branch) return;
 
     const step = f.branch.step;
 
-    const title =
-      step.yesBranch
-        ? step.branchTitle
-        : step.noTitle;
+    const title = step.yesBranch
+      ? step.branchTitle
+      : step.noTitle;
 
-    const description =
-      step.yesBranch
-        ? step.branchText
-        : step.noText;
+    const description = step.yesBranch
+      ? step.branchText
+      : step.noText;
 
     $("pcdResultatCode").innerHTML = `
       <section class="pcd-card">
@@ -1050,7 +1309,7 @@
 
         <h3>${esc(title || "Anomalie à traiter")}</h3>
 
-        <p>${esc(description || "")}</p>
+        <p>${esc(description || "Contrôle à approfondir selon la documentation constructeur.")}</p>
 
         <label class="pcd-field">
           Observation / mesure relevée
@@ -1086,12 +1345,7 @@
     $("pcdResultatCode").innerHTML = `
       <section class="pcd-card">
         <h3>Contrôle à refaire</h3>
-
-        <p>
-          L'anomalie a été déclarée corrigée.
-          Recommence maintenant le contrôle concerné.
-        </p>
-
+        <p>L'anomalie a été déclarée corrigée. Recommence maintenant le contrôle concerné.</p>
         <button class="pcd-btn pcd-primary" data-action="fault-recheck">
           Refaire le contrôle
         </button>
@@ -1125,12 +1379,11 @@
         <div class="pcd-alert">
           L'anomalie est toujours présente.
           Le parcours constructeur est interrompu à cette étape.
-          Il ne faut pas passer au contrôle suivant tant que cette anomalie
+          Ne passe pas au contrôle suivant tant que cette anomalie
           n'est pas traitée ou expliquée.
         </div>
 
         <p><strong>Contrôle :</strong> ${esc(f.branch.step.title)}</p>
-
         <p><strong>Observation :</strong> ${esc(observation || "Non renseignée")}</p>
 
         <button class="pcd-btn pcd-primary" data-action="fault-recheck">
@@ -1152,9 +1405,7 @@
       <div class="pcd-result">
         <strong>${item.number}. ${esc(item.title)}</strong>
         <p>${esc(item.result)}</p>
-        ${item.observation
-          ? `<p>${esc(item.observation)}</p>`
-          : ""}
+        ${item.observation ? `<p>${esc(item.observation)}</p>` : ""}
       </div>
     `).join("");
 
@@ -1166,8 +1417,7 @@
         <div class="pcd-alert">
           Tous les contrôles de cette séquence ont été déclarés conformes.
           Cela ne prouve pas à lui seul que la panne est réparée.
-          Si le défaut persiste, le manuel recommande de contacter
-          l'assistance technique constructeur.
+          Si le défaut persiste, contacter l'assistance technique constructeur.
         </div>
 
         <h4>Résumé des vérifications</h4>
@@ -1189,8 +1439,7 @@
           <p>Révision : ${esc(f.procedure.source.revision)}</p>
           <p>
             <a href="${esc(f.procedure.source.url)}"
-               target="_blank"
-               rel="noopener">
+               target="_blank" rel="noopener">
               Consulter le manuel
             </a>
           </p>
@@ -1216,7 +1465,6 @@
     S.symptom = key;
     S.step = 0;
     S.answers = [];
-
     showStep();
   }
 
@@ -1243,9 +1491,7 @@
 
         <h3>${esc(p.title)}</h3>
 
-        <p class="pcd-muted">
-          Étape ${S.step + 1} / ${p.steps.length}
-        </p>
+        <p class="pcd-muted">Étape ${S.step + 1} / ${p.steps.length}</p>
 
         <div class="pcd-step">
           <strong>${esc(step[0])}</strong>
@@ -1271,8 +1517,7 @@
 
         <div class="pcd-actions">
           <button class="pcd-btn pcd-secondary"
-            data-action="prev"
-            ${S.step === 0 ? "disabled" : ""}>
+            data-action="prev" ${S.step === 0 ? "disabled" : ""}>
             ← Précédent
           </button>
 
@@ -1562,23 +1807,18 @@
 
     out.innerHTML = `
       <div class="pcd-result">
-
         <strong>Résultat — interpolation entre deux points constructeur</strong>
-
         <p>Température : ${t.toFixed(1)} °C</p>
         <p>Résistance attendue estimée : ${expected.toFixed(1)} Ω</p>
         <p>Résistance mesurée : ${m.toFixed(1)} Ω</p>
         <p>Écart relatif : ${delta.toFixed(1)} %</p>
-
         <div class="${cls}">${esc(verdict)}</div>
-
         <p class="pcd-muted">
           ${esc(val("bMarque"))} — ${esc(val("bModele"))} —
           ${esc(val("bComposant"))} — carte ${esc(val("bCarte"))} —
           ${esc(val("bRepere"))} : ${esc(val("bFonction"))}.
           Source : ${esc(val("bSource"))}.
         </p>
-
       </div>`;
   }
 
@@ -1840,6 +2080,7 @@
       case "fault-reset":
         if (S.fault) {
           const f = S.fault;
+
           $("pcdMarque").value = f.brand;
           updateBrands();
 
