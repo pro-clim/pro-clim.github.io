@@ -1,10 +1,9 @@
 
 /* ==========================================================
-   PRO CLIM — ASSISTANT CHANTIER V5
-   Moteur documentaire constructeur
-   Réponses techniques ciblées
+   PRO CLIM — ASSISTANT CHANTIER V6
+   Menu déroulant des références constructeur
    Daikin VRV 5-S — RXYSA4~6A7V/Y1B
-   Recherche matériel + accessoires Refnet KHRQ
+   Recherche documentaire + accessoires Refnet
    ========================================================== */
 
 (() => {
@@ -12,6 +11,7 @@
 
     const STORAGE = "proclim_assistant_chantier_v2";
     const $ = id => document.getElementById(id);
+    const MANUEL = "__manuel__";
 
     const state = {
         marque: "",
@@ -28,14 +28,10 @@
     ====================================================== */
 
     const DOCUMENTS = [
-
         {
             id: "daikin-vrv5s-refnet-rxysa-2024",
-
             marque: "Daikin",
-
             gammes: ["VRV 5 S", "VRV 5"],
-
             modeles: [
                 "RXYSA4A7V1B",
                 "RXYSA5A7V1B",
@@ -44,21 +40,15 @@
                 "RXYSA5A7Y1B",
                 "RXYSA6A7Y1B"
             ],
-
             prefixe: "RXYSA",
-
             famille: "RXYSA4~6A7V/Y1B",
-
             sujet: "refnet",
-
             accessoires: [
                 "KHRQ22M20TA",
                 "KHRQ22M29H"
             ],
-
             valeur:
                 "Le manuel Daikin donne les critères de sélection des kits Refnet selon la puissance de l'unité extérieure et l'indice de capacité des unités intérieures raccordées en aval.",
-
             prescriptions: [
                 {
                     titre: "Premier Refnet depuis l'unité extérieure",
@@ -76,28 +66,20 @@
                     kit: "KHRQ22M29H"
                 }
             ],
-
             conditions:
                 "Le manuel précise qu'un maximum de 8 embranchements peut être raccordé à un collecteur Refnet. Les critères de sélection doivent être appliqués à la configuration réelle du réseau.",
-
             nonDocumente:
                 "La page 27 ne donne aucune distance minimale chiffrée entre deux kits Refnet. Elle traite de la sélection des kits, pas de leur espacement. Ne pas déduire une distance à partir des critères de capacité.",
-
             source:
                 "Daikin — Manuel d'installation et d'utilisation VRV 5-S",
-
             reference:
                 "4PFR600329-1F — édition 2024.10",
-
             page:
                 "Page 27 — section 14.1.5",
-
             url:
                 "https://www.daikin.eu/content/dam/document-library/installation-manuals/rxysa/RXYSA%284.5.6%29A%28V.Y%291_Installation.Operation%20manual_4PFR600329-1F_French.pdf",
-
             statut: "document constructeur identifié"
         }
-
     ];
 
     /* ======================================================
@@ -109,127 +91,88 @@
             id: "refnet",
             titre: "Dérivations frigorifiques / Refnet",
             mots: [
-                "refnet",
-                "ref net",
-                "ref joint",
-                "derivation",
-                "derivation frigorifique",
-                "joint frigorifique",
-                "raccord de derivation",
-                "collecteur",
-                "embranchement frigorifique",
+                "refnet", "ref net", "ref joint",
+                "derivation", "derivation frigorifique",
+                "joint frigorifique", "raccord de derivation",
+                "collecteur", "embranchement frigorifique",
                 "distance entre deux refnet",
                 "distance entre 2 refnet",
-                "espacement refnet",
-                "refnet et coude"
+                "espacement refnet", "refnet et coude"
             ]
         },
         {
             id: "tuyauterie",
             titre: "Tuyauteries frigorifiques",
             mots: [
-                "tuyauterie",
-                "longueur de tube",
-                "longueur frigorifique",
-                "denivele",
-                "diametre tube",
-                "liaison frigorifique"
+                "tuyauterie", "longueur de tube",
+                "longueur frigorifique", "denivele",
+                "diametre tube", "liaison frigorifique"
             ]
         },
         {
             id: "cassette",
             titre: "Cassette et diffusion d'air",
             mots: [
-                "cassette",
-                "portee d air",
-                "portee air",
-                "soufflage",
-                "diffusion d air",
-                "jet d air"
+                "cassette", "portee d air", "portee air",
+                "soufflage", "diffusion d air", "jet d air"
             ]
         },
         {
             id: "condensats",
             titre: "Évacuation des condensats",
             mots: [
-                "condensat",
-                "pompe de relevage",
-                "relevage",
-                "evacuation eau",
-                "pente evacuation"
+                "condensat", "pompe de relevage",
+                "relevage", "evacuation eau", "pente evacuation"
             ]
         },
         {
             id: "electrique",
             titre: "Alimentation électrique",
             mots: [
-                "cable",
-                "section",
-                "disjoncteur",
-                "protection electrique",
-                "alimentation",
-                "intensite",
-                "raccordement electrique"
+                "cable", "section", "disjoncteur",
+                "protection electrique", "alimentation",
+                "intensite", "raccordement electrique"
             ]
         },
         {
             id: "degagement",
             titre: "Dégagements et ventilation",
             mots: [
-                "degagement",
-                "distance",
-                "espace",
-                "aspiration",
-                "soufflage groupe",
-                "recirculation"
+                "degagement", "distance", "espace",
+                "aspiration", "soufflage groupe", "recirculation"
             ]
         },
         {
             id: "charge",
             titre: "Charge en fluide frigorigène",
             mots: [
-                "charge",
-                "fluide",
-                "appoint",
-                "complement de charge",
-                "gramme",
-                "recharge"
+                "charge", "fluide", "appoint",
+                "complement de charge", "gramme", "recharge"
             ]
         },
         {
             id: "mise_en_service",
             titre: "Mise en service",
             mots: [
-                "mise en service",
-                "tirage au vide",
-                "vacuum",
-                "epreuve",
-                "azote",
-                "pression essai"
+                "mise en service", "tirage au vide",
+                "vacuum", "epreuve", "azote", "pression essai"
             ]
         },
         {
             id: "adressage",
             titre: "Adressage et communication",
             mots: [
-                "adressage",
-                "adresse",
-                "communication",
-                "bus",
-                "transmission",
-                "liaison de communication"
+                "adressage", "adresse", "communication",
+                "bus", "transmission", "liaison de communication"
             ]
         },
         {
             id: "debit",
             titre: "Débit d'air et gainable",
             mots: [
-                "debit d air",
-                "debit air",
-                "pression statique",
-                "gaine",
-                "bouche",
-                "perte de charge"
+                "debit d air", "debit air",
+                "pression statique", "gaine",
+                "bouche", "perte de charge"
             ]
         }
     ];
@@ -240,100 +183,57 @@
 
     const MARQUES = {
         "Daikin": [
-            "Monosplit",
-            "Multisplit",
-            "Sky Air",
-            "VRV IV",
-            "VRV IV+",
-            "VRV 5",
-            "VRV 5 S",
-            "VRV 5 Heat Recovery",
+            "Monosplit", "Multisplit", "Sky Air",
+            "VRV IV", "VRV IV+", "VRV 5",
+            "VRV 5 S", "VRV 5 Heat Recovery",
             "Autre / à préciser"
         ],
-
         "Mitsubishi Electric": [
-            "M Series",
-            "Multi-split",
-            "Mr Slim",
-            "City Multi",
-            "City Multi R2",
-            "City Multi Y",
+            "M Series", "Multi-split", "Mr Slim",
+            "City Multi", "City Multi R2", "City Multi Y",
             "Autre / à préciser"
         ],
-
         "Mitsubishi Heavy Industries": [
-            "Mono-split",
-            "Multi-split",
-            "KX / VRF",
+            "Mono-split", "Multi-split", "KX / VRF",
             "Autre / à préciser"
         ],
-
         "Samsung": [
-            "Mono-split",
-            "Multi-split",
-            "DVM",
+            "Mono-split", "Multi-split", "DVM",
             "Autre / à préciser"
         ],
-
         "Toshiba": [
-            "Mono-split",
-            "Multi-split",
-            "SMMS",
+            "Mono-split", "Multi-split", "SMMS",
             "Autre / à préciser"
         ],
-
         "Panasonic": [
-            "Mono-split",
-            "Multi-split",
-            "ECOi",
+            "Mono-split", "Multi-split", "ECOi",
             "Autre / à préciser"
         ],
-
         "Atlantic / Fujitsu": [
-            "Mono-split",
-            "Multi-split",
-            "VRF",
+            "Mono-split", "Multi-split", "VRF",
             "Autre / à préciser"
         ],
-
         "LG": [
-            "Mono-split",
-            "Multi-split",
-            "Multi V",
+            "Mono-split", "Multi-split", "Multi V",
             "Autre / à préciser"
         ],
-
         "Hitachi": [
-            "Mono-split",
-            "Multi-split",
-            "Set Free",
+            "Mono-split", "Multi-split", "Set Free",
             "Autre / à préciser"
         ],
-
         "Midea": [
-            "Mono-split",
-            "Multi-split",
-            "VRF",
+            "Mono-split", "Multi-split", "VRF",
             "Autre / à préciser"
         ],
-
         "Gree": [
-            "Mono-split",
-            "Multi-split",
-            "GMV",
+            "Mono-split", "Multi-split", "GMV",
             "Autre / à préciser"
         ],
-
         "Haier": [
-            "Mono-split",
-            "Multi-split",
-            "MRV",
+            "Mono-split", "Multi-split", "MRV",
             "Autre / à préciser"
         ],
-
-        "Autre": [
-            "Autre / à préciser"
-        ]
+        "Autre": ["Autre / à préciser"]
     };
 
     /* ======================================================
@@ -376,7 +276,6 @@
             if (!Array.isArray(state.historique)) {
                 state.historique = [];
             }
-
         } catch (e) {
             console.warn("Pro Clim : sauvegarde non lisible.");
         }
@@ -394,32 +293,122 @@
     }
 
     /* ======================================================
+       RÉFÉRENCES DISPONIBLES POUR LA GAMME
+    ====================================================== */
+
+    function referencesDisponibles(marque, gamme) {
+        const refs = [];
+
+        DOCUMENTS.forEach(doc => {
+            const marqueOK =
+                normaliser(doc.marque) === normaliser(marque);
+
+            const gammeOK =
+                doc.gammes.some(g =>
+                    normaliser(g) === normaliser(gamme)
+                );
+
+            if (marqueOK && gammeOK) {
+                doc.modeles.forEach(ref => {
+                    if (!refs.includes(ref)) refs.push(ref);
+                });
+            }
+        });
+
+        return refs;
+    }
+
+    function actualiserReferences(valeurSouhaitee = "") {
+        const select = $("chantierModele");
+        const saisie = $("chantierModeleManuel");
+        const marque = $("chantierMarque").value;
+        const gamme = $("chantierGamme").value;
+
+        if (!select || !saisie) return;
+
+        const refs = referencesDisponibles(marque, gamme);
+
+        select.innerHTML =
+            `<option value="">Choisir une référence</option>`;
+
+        refs.forEach(ref => {
+            const option = document.createElement("option");
+            option.value = ref;
+            option.textContent = ref;
+            select.appendChild(option);
+        });
+
+        const optionManuelle = document.createElement("option");
+        optionManuelle.value = MANUEL;
+        optionManuelle.textContent =
+            refs.length
+                ? "Autre référence — saisie manuelle"
+                : "Référence non répertoriée — saisie manuelle";
+
+        select.appendChild(optionManuelle);
+
+        const valeur = String(valeurSouhaitee || "").trim();
+        const correspondance = refs.find(ref =>
+            codeNormalise(ref) === codeNormalise(valeur)
+        );
+
+        if (correspondance) {
+            select.value = correspondance;
+            saisie.value = "";
+            saisie.hidden = true;
+        } else if (valeur) {
+            select.value = MANUEL;
+            saisie.value = valeur;
+            saisie.hidden = false;
+        } else {
+            select.value = "";
+            saisie.value = "";
+            saisie.hidden = true;
+        }
+    }
+
+    function gererChoixReference() {
+        const select = $("chantierModele");
+        const saisie = $("chantierModeleManuel");
+
+        if (select.value === MANUEL) {
+            saisie.hidden = false;
+            saisie.focus();
+        } else {
+            saisie.hidden = true;
+            saisie.value = "";
+        }
+
+        sauvegarderDepuisChamps();
+    }
+
+    function sauvegarderDepuisChamps() {
+        if (!$("chantierMarque")) return;
+        Object.assign(state, lireMateriel());
+        sauvegarder();
+    }
+
+    /* ======================================================
        CRÉATION DE L'INTERFACE
     ====================================================== */
 
     function creerInterface() {
-
         const main = document.querySelector("main");
-
         const accueil = document.querySelector(
             "#pageAccueil .quick-grid"
         );
 
         if (!main || !accueil) {
-            console.warn(
-                "Assistant chantier : accueil introuvable."
-            );
+            console.warn("Assistant chantier : accueil introuvable.");
             return;
         }
 
         if ($("pageAssistantChantier")) return;
 
         const card = document.createElement("button");
-
         card.type = "button";
         card.id = "btnAccueilChantier";
         card.className = "quick-card";
-
         card.innerHTML = `
             <span>🏗️</span>
             <strong>Assistant chantier</strong>
@@ -429,7 +418,6 @@
         accueil.appendChild(card);
 
         const page = document.createElement("section");
-
         page.id = "pageAssistantChantier";
         page.className = "page";
 
@@ -472,8 +460,18 @@
                     <label for="chantierModele">
                         Référence du groupe ou de l'unité
                     </label>
-                    <input id="chantierModele"
-                        placeholder="Ex. RXYSA4A7V1B / PUHY...">
+                    <select id="chantierModele">
+                        <option value="">Choisir d'abord une gamme</option>
+                    </select>
+
+                    <input id="chantierModeleManuel"
+                        placeholder="Saisir la référence exacte"
+                        hidden>
+                    <small class="step-description">
+                        Les références proposées dépendent de la documentation
+                        intégrée dans Pro Clim. Les autres modèles restent
+                        saisissables manuellement.
+                    </small>
                 </div>
 
                 <div class="field">
@@ -534,62 +532,50 @@
                 </p>
 
                 <div class="chantier-exemples">
-
                     <button type="button" class="chantier-exemple"
                         data-question="Quelle distance respecter entre deux Refnet ?">
                         🔩 Distance entre deux Refnet
                     </button>
-
                     <button type="button" class="chantier-exemple"
                         data-question="Quelle distance respecter entre un Refnet et un coude ?">
                         📐 Distance entre Refnet et coude
                     </button>
-
                     <button type="button" class="chantier-exemple"
                         data-question="Quel kit Refnet choisir pour le premier branchement ?">
                         🔧 Choix du premier kit Refnet
                     </button>
-
                     <button type="button" class="chantier-exemple"
                         data-question="Quel kit choisir pour les autres dérivations Refnet ?">
                         🔩 Choix des autres dérivations
                     </button>
-
                     <button type="button" class="chantier-exemple"
                         data-question="Quel collecteur Refnet choisir ?">
                         🔀 Choix du collecteur Refnet
                     </button>
-
                     <button type="button" class="chantier-exemple"
                         data-question="Quelle est la longueur maximale de tuyauterie ?">
                         📏 Longueur des liaisons frigorifiques
                     </button>
-
                     <button type="button" class="chantier-exemple"
                         data-question="Quelle est la portée d'air de cette cassette ?">
                         🌬️ Portée d'air d'une cassette
                     </button>
-
                     <button type="button" class="chantier-exemple"
                         data-question="Quelle hauteur maximale pour le relevage des condensats ?">
                         💧 Relevage des condensats
                     </button>
-
                     <button type="button" class="chantier-exemple"
                         data-question="Quelle section de câble et quelle protection électrique ?">
                         ⚡ Section et protection électrique
                     </button>
-
                     <button type="button" class="chantier-exemple"
                         data-question="Quelle est la charge complémentaire de fluide ?">
                         ❄️ Complément de charge
                     </button>
-
                     <button type="button" class="chantier-exemple"
                         data-question="Quelle procédure pour la mise en service ?">
                         🧰 Mise en service
                     </button>
-
                 </div>
 
                 <div class="field">
@@ -610,7 +596,6 @@
             <div class="card">
                 <h3>🕘 Historique</h3>
                 <div id="chantierHistorique"></div>
-
                 <button type="button"
                     id="chantierEffacerHistorique"
                     class="btn-secondary">
@@ -636,11 +621,9 @@
     ====================================================== */
 
     function injecterStyles() {
-
         if ($("styleAssistantChantier")) return;
 
         const style = document.createElement("style");
-
         style.id = "styleAssistantChantier";
 
         style.textContent = `
@@ -649,7 +632,6 @@
                 gap:8px;
                 margin:14px 0;
             }
-
             #pageAssistantChantier .chantier-exemple {
                 width:100%;
                 padding:13px;
@@ -660,7 +642,6 @@
                 text-align:left;
                 font-size:14px;
             }
-
             #pageAssistantChantier .chantier-resultat {
                 padding:14px;
                 border-left:4px solid #0D47A1;
@@ -669,7 +650,6 @@
                 line-height:1.6;
                 white-space:pre-line;
             }
-
             #pageAssistantChantier .chantier-alerte {
                 padding:12px;
                 margin-top:12px;
@@ -678,7 +658,6 @@
                 border-radius:8px;
                 line-height:1.5;
             }
-
             #pageAssistantChantier .chantier-ok {
                 padding:12px;
                 margin-top:12px;
@@ -687,7 +666,6 @@
                 border-radius:8px;
                 line-height:1.5;
             }
-
             #pageAssistantChantier .chantier-source {
                 display:block;
                 margin-top:14px;
@@ -698,13 +676,11 @@
                 font-weight:600;
                 text-decoration:none;
             }
-
             #pageAssistantChantier .chantier-historique-item {
                 padding:10px 0;
                 border-bottom:1px solid #e2e8f0;
                 font-size:14px;
             }
-
             #pageAssistantChantier .chantier-prescription {
                 padding:12px;
                 margin:10px 0;
@@ -714,12 +690,10 @@
                 line-height:1.6;
                 white-space:pre-line;
             }
-
             #pageAssistantChantier .chantier-prescription strong {
                 display:block;
                 margin-bottom:5px;
             }
-
             #pageAssistantChantier [hidden] {
                 display:none !important;
             }
@@ -733,21 +707,40 @@
     ====================================================== */
 
     function connecterEvenements() {
+        $("btnAccueilChantier").addEventListener("click", ouvrir);
 
-        $("btnAccueilChantier").addEventListener(
-            "click",
-            ouvrir
+        $("chantierRetour").addEventListener("click", () =>
+            afficherPage("pageAccueil")
         );
 
-        $("chantierRetour").addEventListener(
-            "click",
-            () => afficherPage("pageAccueil")
+        $("chantierMarque").addEventListener("change", () =>
+            changerMarque(true)
         );
 
-        $("chantierMarque").addEventListener(
+        $("chantierGamme").addEventListener("change", () => {
+            state.gamme = $("chantierGamme").value;
+            actualiserReferences("");
+            sauvegarderDepuisChamps();
+        });
+
+        $("chantierModele").addEventListener(
             "change",
-            () => changerMarque(true)
+            gererChoixReference
         );
+
+        $("chantierModeleManuel").addEventListener(
+            "input",
+            sauvegarderDepuisChamps
+        );
+
+        [
+            "chantierAccessoire",
+            "chantierInstallation",
+            "chantierFluide"
+        ].forEach(id => {
+            $(id).addEventListener("change", sauvegarderDepuisChamps);
+            $(id).addEventListener("input", sauvegarderDepuisChamps);
+        });
 
         $("chantierEnregistrer").addEventListener(
             "click",
@@ -759,35 +752,26 @@
             analyserQuestion
         );
 
-        $("chantierEffacerHistorique").addEventListener(
-            "click",
-            () => {
-                state.historique = [];
-                sauvegarder();
-                afficherHistorique();
-            }
-        );
+        $("chantierEffacerHistorique").addEventListener("click", () => {
+            state.historique = [];
+            sauvegarder();
+            afficherHistorique();
+        });
 
-        document.querySelectorAll(
-            ".chantier-exemple"
-        ).forEach(button => {
-
+        document.querySelectorAll(".chantier-exemple").forEach(button => {
             button.addEventListener("click", () => {
                 $("chantierQuestion").value =
                     button.dataset.question || "";
-
                 $("chantierQuestion").focus();
             });
-
         });
     }
 
     /* ======================================================
-       GAMMES
+       MARQUES ET GAMMES
     ====================================================== */
 
     function changerMarque(reinitialiserGamme = true) {
-
         const marque = $("chantierMarque").value;
         const select = $("chantierGamme");
 
@@ -795,12 +779,9 @@
             `<option value="">Choisir une gamme</option>`;
 
         (MARQUES[marque] || []).forEach(gamme => {
-
             const option = document.createElement("option");
-
             option.value = gamme;
             option.textContent = gamme;
-
             select.appendChild(option);
         });
 
@@ -808,20 +789,24 @@
 
         if (reinitialiserGamme) {
             state.gamme = "";
+            state.modele = "";
         }
 
-        sauvegarder();
+        actualiserReferences(
+            reinitialiserGamme ? "" : state.modele
+        );
+
+        sauvegarderDepuisChamps();
     }
 
     function restaurerChamps() {
-
         $("chantierMarque").value = state.marque || "";
 
         changerMarque(false);
 
         $("chantierGamme").value = state.gamme || "";
 
-        $("chantierModele").value = state.modele || "";
+        actualiserReferences(state.modele || "");
 
         $("chantierAccessoire").value =
             state.accessoire || "";
@@ -834,11 +819,16 @@
     }
 
     function lireMateriel() {
+        const choix = $("chantierModele").value;
+
+        const modele = choix === MANUEL
+            ? $("chantierModeleManuel").value.trim()
+            : choix;
 
         return {
             marque: $("chantierMarque").value,
             gamme: $("chantierGamme").value,
-            modele: $("chantierModele").value.trim(),
+            modele,
             accessoire: $("chantierAccessoire").value.trim(),
             installation: $("chantierInstallation").value,
             fluide: $("chantierFluide").value
@@ -846,9 +836,7 @@
     }
 
     function enregistrerMateriel() {
-
         Object.assign(state, lireMateriel());
-
         sauvegarder();
 
         $("chantierStatut").textContent =
@@ -864,17 +852,12 @@
     }
 
     function afficherPage(id) {
-
         if (typeof ROUTER !== "undefined") {
-
             ROUTER.afficher(id);
-
         } else {
-
             document.querySelectorAll(".page").forEach(p => {
                 p.classList.remove("active");
             });
-
             $(id)?.classList.add("active");
         }
 
@@ -886,16 +869,12 @@
     ====================================================== */
 
     function identifierSujet(question) {
-
         const q = normaliser(question);
 
         for (const sujet of SUJETS) {
-
-            if (
-                sujet.mots.some(mot =>
-                    q.includes(normaliser(mot))
-                )
-            ) {
+            if (sujet.mots.some(mot =>
+                q.includes(normaliser(mot))
+            )) {
                 return sujet;
             }
         }
@@ -912,13 +891,15 @@
     ====================================================== */
 
     function chercherDocument(sujet, materiel) {
-
         const marque = normaliser(materiel.marque);
         const gamme = normaliser(materiel.gamme);
-        const modele = codeNormalise(materiel.modele);
+
+        let modele = codeNormalise(materiel.modele);
+
+        // Tolérance à la saisie raccourcie « Rysa »
+        if (modele === "rysa") modele = "rxysa";
 
         return DOCUMENTS.find(doc => {
-
             const marqueOK =
                 normaliser(doc.marque) === marque;
 
@@ -941,18 +922,14 @@
                     modele.startsWith(prefixe)
                 );
 
-            return (
-                marqueOK &&
+            return marqueOK &&
                 gammeOK &&
                 (modeleExact || modeleFamille) &&
-                doc.sujet === sujet.id
-            );
-
+                doc.sujet === sujet.id;
         }) || null;
     }
 
     function identifierAccessoire(accessoire, doc) {
-
         const code = codeNormalise(accessoire);
 
         if (!code) {
@@ -979,7 +956,6 @@
     ====================================================== */
 
     function construireFicheRefnet(doc, materiel) {
-
         const accessoire = identifierAccessoire(
             materiel.accessoire,
             doc
@@ -990,7 +966,6 @@
         lignes.push("SUJET :");
         lignes.push("Dérivations frigorifiques / Refnet");
         lignes.push("");
-
         lignes.push("MATÉRIEL IDENTIFIÉ :");
         lignes.push("Constructeur : " + doc.marque);
         lignes.push("Gamme : VRV 5-S");
@@ -999,14 +974,11 @@
             "Référence saisie : " +
             (materiel.modele || "Non renseignée")
         );
-
         lignes.push("");
-
         lignes.push("SÉLECTION DES KITS REFNET :");
         lignes.push("");
 
         doc.prescriptions.forEach(item => {
-
             lignes.push(item.titre);
             lignes.push("Condition : " + item.condition);
             lignes.push("Kit : " + item.kit);
@@ -1016,25 +988,17 @@
         lignes.push("AUTRE PRESCRIPTION :");
         lignes.push(doc.conditions);
         lignes.push("");
-
         lignes.push("DISTANCE ENTRE DEUX REFNET :");
         lignes.push(doc.nonDocumente);
         lignes.push("");
-
         lignes.push("SOURCE CONSTRUCTEUR :");
         lignes.push(doc.source);
         lignes.push("Référence : " + doc.reference);
         lignes.push("Page : " + doc.page);
 
-        let niveau = "famille";
-
-        if (
-            doc.modeles.some(ref =>
-                codeNormalise(ref) === codeNormalise(materiel.modele)
-            )
-        ) {
-            niveau = "exact";
-        }
+        const niveau = doc.modeles.some(ref =>
+            codeNormalise(ref) === codeNormalise(materiel.modele)
+        ) ? "exact" : "famille";
 
         return {
             texte: lignes.join("\n"),
@@ -1048,17 +1012,14 @@
     ====================================================== */
 
     function analyserQuestion() {
-
         const question = $("chantierQuestion").value.trim();
 
         if (!question) {
-
             afficherResultat(
                 "Question manquante",
                 "Écris ta question technique avant de lancer l'analyse.",
                 null
             );
-
             return;
         }
 
@@ -1079,14 +1040,12 @@
             date: new Date().toLocaleString("fr-FR")
         });
 
-        state.historique =
-            state.historique.slice(0, 10);
+        state.historique = state.historique.slice(0, 10);
 
         sauvegarder();
         afficherHistorique();
 
         if (documentTechnique && sujet.id === "refnet") {
-
             const fiche = construireFicheRefnet(
                 documentTechnique,
                 materiel
@@ -1098,34 +1057,23 @@
                 fiche,
                 materiel
             );
-
             return;
         }
 
         if (documentTechnique) {
-
             afficherResultat(
                 "Documentation constructeur trouvée",
                 documentTechnique.valeur,
                 documentTechnique
             );
-
             return;
         }
 
         const manque = [];
 
-        if (!materiel.marque) {
-            manque.push("la marque");
-        }
-
-        if (!materiel.gamme) {
-            manque.push("la gamme exacte");
-        }
-
-        if (!materiel.modele) {
-            manque.push("la référence du matériel");
-        }
+        if (!materiel.marque) manque.push("la marque");
+        if (!materiel.gamme) manque.push("la gamme exacte");
+        if (!materiel.modele) manque.push("la référence du matériel");
 
         let texte = `
 SUJET IDENTIFIÉ :
@@ -1142,13 +1090,10 @@ MATÉRIEL :
 `;
 
         if (manque.length) {
-
             texte +=
                 "Pour identifier la bonne documentation, il manque : " +
                 manque.join(", ") + ".";
-
         } else {
-
             texte +=
                 "Le matériel est identifié, mais aucune fiche constructeur vérifiée correspondant à cette configuration n'est encore intégrée dans Pro Clim.";
         }
@@ -1171,7 +1116,6 @@ Une documentation correspondant à la référence et à la configuration réelle
     ====================================================== */
 
     function afficherReponseRefnet(question, doc, fiche, materiel) {
-
         const q = normaliser(question);
         const zone = $("chantierReponse");
 
@@ -1209,10 +1153,7 @@ Une documentation correspondant à la référence et à la configuration réelle
         let vigilance = "";
         let niveau = "";
 
-        /* DISTANCE ENTRE REFNET */
-
         if (distanceDemandee && !coudeDemande) {
-
             titre = "Distance entre deux Refnet";
 
             reponse = `
@@ -1243,12 +1184,7 @@ La valeur de 1 m provient d'une documentation technique Daikin distincte. Elle c
             vigilance = `
 Pour un chantier VRV 5-S RXYSA, conserve cette valeur comme préconisation de pose, mais vérifie la documentation technique Daikin applicable à ton installation si tu dois justifier une conformité constructeur.
 `;
-        }
-
-        /* DISTANCE REFNET / COUDE */
-
-        else if (coudeDemande) {
-
+        } else if (coudeDemande) {
             titre = "Distance entre Refnet et coude";
 
             reponse = `
@@ -1274,12 +1210,7 @@ Elle n'est pas confirmée comme prescription spécifique à la gamme VRV 5-S dan
             vigilance = `
 Ne présente pas cette valeur comme une exigence chiffrée du manuel RXYSA sans confirmation documentaire complémentaire.
 `;
-        }
-
-        /* PREMIER REFNET */
-
-        else if (premierRefnet) {
-
+        } else if (premierRefnet) {
             titre = "Choix du premier Refnet";
 
             reponse = `
@@ -1301,12 +1232,7 @@ Source : Daikin VRV 5-S RXYSA, manuel 4PFR600329-1F, édition 2024.10, page 27, 
             vigilance = `
 Cette sélection concerne le premier branchement côté groupe extérieur. Elle ne doit pas être confondue avec le choix des dérivations suivantes. Confirme la référence complète du groupe et la configuration du réseau.
 `;
-        }
-
-        /* COLLECTEUR */
-
-        else if (collecteurDemande) {
-
+        } else if (collecteurDemande) {
             titre = "Choix du collecteur Refnet";
 
             reponse = `
@@ -1330,12 +1256,7 @@ Source : Daikin VRV 5-S RXYSA, manuel 4PFR600329-1F, édition 2024.10, page 27, 
             vigilance = `
 Il faut additionner les indices de capacité des unités intérieures raccordées en aval du collecteur. Ne confonds pas cet indice avec la puissance électrique ou la puissance en kW.
 `;
-        }
-
-        /* AUTRES DÉRIVATIONS */
-
-        else if (autresDerivations) {
-
+        } else if (autresDerivations) {
             titre = "Choix des autres dérivations Refnet";
 
             reponse = `
@@ -1357,12 +1278,7 @@ Source : Daikin VRV 5-S RXYSA, manuel 4PFR600329-1F, édition 2024.10, page 27, 
             vigilance = `
 Le choix dépend de l'indice de capacité total des unités situées après la dérivation concernée. Il faut donc connaître la composition réelle du réseau.
 `;
-        }
-
-        /* QUESTION GÉNÉRALE REFNET */
-
-        else {
-
+        } else {
             titre = "Documentation Refnet Daikin";
 
             reponse = `
@@ -1374,7 +1290,6 @@ Pour répondre précisément à ta question, il faut identifier le point recherc
 `;
 
             details = fiche.texte;
-
             niveau = "Documentation constructeur identifiée";
 
             vigilance = `
@@ -1443,9 +1358,7 @@ Ne pas appliquer automatiquement une prescription issue d'une autre gamme VRV.
     ====================================================== */
 
     function afficherResultat(titre, texte, doc) {
-
         const zone = $("chantierReponse");
-
         zone.hidden = false;
 
         const verifie = !!doc;
@@ -1466,7 +1379,6 @@ Ne pas appliquer automatiquement une prescription issue d'une autre gamme VRV.
                         ? "Source constructeur identifiée"
                         : "Valeur non vérifiée"}
                 </strong>
-
                 <p>
                     ${verifie
                         ? "La fiche est issue d'une documentation constructeur. Vérifie toujours que la configuration réelle correspond à son domaine d'application."
@@ -1495,36 +1407,24 @@ Ne pas appliquer automatiquement une prescription issue d'une autre gamme VRV.
     ====================================================== */
 
     function afficherHistorique() {
-
         const zone = $("chantierHistorique");
-
         if (!zone) return;
 
         if (!state.historique.length) {
-
             zone.innerHTML =
                 `<p class="step-description">Aucune question enregistrée.</p>`;
-
             return;
         }
 
         zone.innerHTML = state.historique.map(item => `
-
             <div class="chantier-historique-item">
-
-                <strong>
-                    ${echapper(item.question)}
-                </strong>
-
+                <strong>${echapper(item.question)}</strong>
                 <br>
-
                 <small>
                     ${echapper(item.sujet)}
                     — ${echapper(item.date)}
                 </small>
-
             </div>
-
         `).join("");
     }
 
@@ -1535,14 +1435,11 @@ Ne pas appliquer automatiquement une prescription issue d'une autre gamme VRV.
     charger();
 
     if (document.readyState === "loading") {
-
         document.addEventListener(
             "DOMContentLoaded",
             creerInterface
         );
-
     } else {
-
         creerInterface();
     }
 
