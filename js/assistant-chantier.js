@@ -1,8 +1,9 @@
 
 /* ==========================================================
-   PRO CLIM — ASSISTANT CHANTIER V3
+   PRO CLIM — ASSISTANT CHANTIER V4
    Moteur documentaire constructeur
-   Daikin : première fiche VRV 5-S vérifiée
+   Daikin VRV 5-S — RXYSA4~6A7V/Y1B
+   Recherche matériel + accessoires Refnet KHRQ
    ========================================================== */
 
 (() => {
@@ -22,18 +23,17 @@
     };
 
     /* ======================================================
-       BASE DOCUMENTAIRE
-       Une fiche doit toujours avoir une source vérifiable.
+       BASE DOCUMENTAIRE CONSTRUCTEUR
     ====================================================== */
 
     const DOCUMENTS = [
 
         {
-            id: "daikin-vrv5s-refnet-2024",
+            id: "daikin-vrv5s-refnet-rxysa-2024",
 
             marque: "Daikin",
 
-            gammes: ["VRV 5 S"],
+            gammes: ["VRV 5 S", "VRV 5"],
 
             modeles: [
                 "RXYSA4A7V1B",
@@ -44,36 +44,57 @@
                 "RXYSA6A7Y1B"
             ],
 
+            prefixe: "RXYSA",
+
             famille: "RXYSA4~6A7V/Y1B",
 
             sujet: "refnet",
 
-            mots: [
-                "refnet",
-                "joint refnet",
-                "collecteur refnet",
-                "derivation frigorifique"
+            accessoires: [
+                "KHRQ22M20TA",
+                "KHRQ22M29H"
             ],
 
             valeur:
-                "Aucune distance minimale générale entre deux Refnet n'est chiffrée dans la section consultée.",
+                "Le manuel Daikin donne les critères de sélection des kits Refnet selon la puissance de l'unité extérieure et l'indice de capacité des unités intérieures raccordées en aval.",
+
+            prescriptions: [
+                {
+                    titre: "Premier Refnet depuis l'unité extérieure",
+                    condition: "Groupe extérieur de 4 à 6 HP",
+                    kit: "KHRQ22M20TA"
+                },
+                {
+                    titre: "Autres dérivations Refnet",
+                    condition: "Indice de capacité total des unités intérieures en aval inférieur à 182",
+                    kit: "KHRQ22M20TA"
+                },
+                {
+                    titre: "Collecteur Refnet",
+                    condition: "Indice de capacité total des unités intérieures raccordées sous le collecteur inférieur à 182",
+                    kit: "KHRQ22M29H"
+                }
+            ],
 
             conditions:
-                "Le guide indique que le montage du kit de dérivation doit suivre le manuel d'installation livré avec le kit. Le joint Refnet peut être monté avec une ramification horizontale ou verticale. Le collecteur Refnet doit être monté avec une ramification horizontale.",
+                "Le manuel précise qu'un maximum de 8 embranchements peut être raccordé à un collecteur Refnet. Les critères de sélection doivent être appliqués à la configuration réelle du réseau.",
+
+            nonDocumente:
+                "La page 27 ne donne aucune distance minimale chiffrée entre deux kits Refnet. Elle traite de la sélection des kits, pas de leur espacement. Ne pas déduire une distance à partir des critères de capacité.",
 
             source:
-                "Daikin — Guide de référence installateur et utilisateur VRV 5-S",
+                "Daikin — Manuel d'installation et d'utilisation VRV 5-S",
 
             reference:
-                "4P600330-1F — édition 2024.10",
+                "4PFR600329-1F — édition 2024.10",
 
             page:
-                "Page 91 — section 18.2.8",
+                "Page 27 — section 14.1.5",
 
             url:
-                "https://www.daikin.eu/content/dam/document-library/Installer-reference-guide/ac/vrv/rxysa-av1/RXYSA%284.5.6%29A%28V.Y%291_Installer.User%20reference%20guide_4PEN600330-1F_English.pdf",
+                "https://www.daikin.eu/content/dam/document-library/installation-manuals/rxysa/RXYSA%284.5.6%29A%28V.Y%291_Installation.Operation%20manual_4PFR600329-1F_French.pdf",
 
-            statut: "partiel"
+            statut: "document constructeur identifié"
         }
 
     ];
@@ -88,12 +109,14 @@
             titre: "Dérivations frigorifiques / Refnet",
             mots: [
                 "refnet",
+                "ref net",
                 "ref joint",
                 "derivation",
                 "derivation frigorifique",
                 "joint frigorifique",
                 "raccord de derivation",
-                "collecteur"
+                "collecteur",
+                "embranchement frigorifique"
             ]
         },
         {
@@ -323,6 +346,10 @@
             .trim();
     }
 
+    function codeNormalise(value) {
+        return normaliser(value).replace(/[^a-z0-9]/g, "");
+    }
+
     function echapper(value) {
         return String(value ?? "").replace(/[&<>"']/g, c => ({
             "&": "&amp;",
@@ -368,6 +395,7 @@
     function creerInterface() {
 
         const main = document.querySelector("main");
+
         const accueil = document.querySelector(
             "#pageAccueil .quick-grid"
         );
@@ -437,7 +465,7 @@
 
                 <div class="field">
                     <label for="chantierModele">
-                        Référence exacte
+                        Référence du groupe ou de l'unité
                     </label>
                     <input id="chantierModele"
                         placeholder="Ex. RXYSA4A7V1B / PUHY...">
@@ -448,7 +476,7 @@
                         Accessoire concerné
                     </label>
                     <input id="chantierAccessoire"
-                        placeholder="Ex. KHRQ22M20T / REFNET...">
+                        placeholder="Ex. KHRQ22M20TA / KHRQ22M29H">
                 </div>
 
                 <div class="field">
@@ -505,6 +533,21 @@
                     <button type="button" class="chantier-exemple"
                         data-question="Quelle distance respecter entre deux Refnet ?">
                         🔩 Distance entre deux Refnet
+                    </button>
+
+                    <button type="button" class="chantier-exemple"
+                        data-question="Quel kit Refnet choisir pour le premier branchement ?">
+                        🔧 Choix du premier kit Refnet
+                    </button>
+
+                    <button type="button" class="chantier-exemple"
+                        data-question="Quel kit choisir pour les autres dérivations Refnet ?">
+                        🔩 Choix des autres dérivations
+                    </button>
+
+                    <button type="button" class="chantier-exemple"
+                        data-question="Quel collecteur Refnet choisir ?">
+                        🔀 Choix du collecteur Refnet
                     </button>
 
                     <button type="button" class="chantier-exemple"
@@ -650,6 +693,19 @@
                 padding:10px 0;
                 border-bottom:1px solid #e2e8f0;
                 font-size:14px;
+            }
+
+            #pageAssistantChantier .chantier-prescription {
+                padding:12px;
+                margin:10px 0;
+                background:#f3f7fc;
+                border-radius:8px;
+                border-left:3px solid #0D47A1;
+            }
+
+            #pageAssistantChantier .chantier-prescription strong {
+                display:block;
+                margin-bottom:5px;
             }
 
             #pageAssistantChantier [hidden] {
@@ -847,7 +903,7 @@
 
         const marque = normaliser(materiel.marque);
         const gamme = normaliser(materiel.gamme);
-        const modele = normaliser(materiel.modele);
+        const modele = codeNormalise(materiel.modele);
 
         return DOCUMENTS.find(doc => {
 
@@ -859,27 +915,119 @@
                     normaliser(g) === gamme
                 );
 
-            const modeleOK =
+            const modeleExact =
                 doc.modeles.some(ref =>
-                    modele === normaliser(ref) ||
-                    (
-                        modele.length >= 5 &&
-                        normaliser(ref).startsWith(modele)
-                    )
+                    modele === codeNormalise(ref)
+                );
+
+            const modeleFamille =
+                modele.length >= 5 &&
+                codeNormalise(doc.prefixe).startsWith(modele) ||
+                (
+                    modele.length >= 5 &&
+                    modele.startsWith(codeNormalise(doc.prefixe))
                 );
 
             return (
                 marqueOK &&
                 gammeOK &&
-                modeleOK &&
-                doc.sujet === sujet.id &&
-                doc.valeur &&
-                doc.source &&
-                doc.page &&
-                doc.url
+                (modeleExact || modeleFamille) &&
+                doc.sujet === sujet.id
             );
 
         }) || null;
+    }
+
+    function identifierAccessoire(accessoire, document) {
+
+        const code = codeNormalise(accessoire);
+
+        if (!code) {
+            return {
+                renseigne: false,
+                reconnu: false,
+                code: ""
+            };
+        }
+
+        const trouve = document.accessoires.find(ref =>
+            codeNormalise(ref) === code
+        );
+
+        return {
+            renseigne: true,
+            reconnu: !!trouve,
+            code: trouve || accessoire
+        };
+    }
+
+    /* ======================================================
+       CONSTRUCTION DE LA FICHE REFNET
+    ====================================================== */
+
+    function construireFicheRefnet(document, materiel) {
+
+        const accessoire = identifierAccessoire(
+            materiel.accessoire,
+            document
+        );
+
+        const lignes = [];
+
+        lignes.push("SUJET :");
+        lignes.push("Dérivations frigorifiques / Refnet");
+        lignes.push("");
+
+        lignes.push("MATÉRIEL IDENTIFIÉ :");
+        lignes.push("Constructeur : " + document.marque);
+        lignes.push("Gamme : VRV 5-S");
+        lignes.push("Famille constructeur : " + document.famille);
+        lignes.push(
+            "Référence saisie : " +
+            (materiel.modele || "Non renseignée")
+        );
+
+        lignes.push("");
+
+        lignes.push("SÉLECTION DES KITS REFNET :");
+        lignes.push("");
+
+        document.prescriptions.forEach(item => {
+
+            lignes.push(item.titre);
+            lignes.push("Condition : " + item.condition);
+            lignes.push("Kit : " + item.kit);
+            lignes.push("");
+        });
+
+        lignes.push("AUTRE PRESCRIPTION :");
+        lignes.push(document.conditions);
+        lignes.push("");
+
+        lignes.push("DISTANCE ENTRE DEUX REFNET :");
+        lignes.push(document.nonDocumente);
+        lignes.push("");
+
+        lignes.push("SOURCE CONSTRUCTEUR :");
+        lignes.push(document.source);
+        lignes.push("Référence : " + document.reference);
+        lignes.push("Page : " + document.page);
+
+        let niveau = "famille";
+
+        if (
+            document.modeles.some(ref =>
+                codeNormalise(ref) === codeNormalise(materiel.modele)
+            )
+        ) {
+            niveau = "exact";
+        }
+
+        return {
+            texte: lignes.join("\n"),
+            accessoire,
+            niveau
+        };
     }
 
     /* ======================================================
@@ -927,37 +1075,27 @@
 
         afficherHistorique();
 
+        if (document && sujet.id === "refnet") {
+
+            const fiche = construireFicheRefnet(
+                document,
+                materiel
+            );
+
+            afficherFicheRefnet(
+                document,
+                fiche,
+                materiel
+            );
+
+            return;
+        }
+
         if (document) {
 
             afficherResultat(
                 "Documentation constructeur trouvée",
-                `
-SUJET :
-${sujet.titre}
-
-INFORMATION CONSTRUCTEUR :
-${document.valeur}
-
-PRESCRIPTIONS :
-${document.conditions}
-
-MATÉRIEL CONCERNÉ :
-${document.famille}
-
-SOURCE :
-${document.source}
-
-RÉFÉRENCE DOCUMENT :
-${document.reference}
-
-PAGE :
-${document.page}
-
-IMPORTANT :
-Cette fiche ne fournit pas de distance minimale chiffrée entre deux Refnet.
-Pour une prescription dimensionnelle ou une distance spécifique au kit,
-il faut consulter la notice du kit de dérivation exact.
-                `,
+                document.valeur,
                 document
             );
 
@@ -1001,13 +1139,13 @@ MATÉRIEL :
         } else {
 
             texte +=
-                "Le matériel est renseigné, mais aucune fiche constructeur vérifiée correspondant exactement à cette configuration n'est encore intégrée dans Pro Clim.";
+                "Le matériel est renseigné, mais aucune fiche constructeur vérifiée correspondant à cette configuration n'est encore intégrée dans Pro Clim.";
         }
 
         texte += `
 
 Je préfère ne pas fournir de valeur approximative.
-Une notice correspondant au modèle et à l'accessoire exacts est nécessaire.
+Une documentation correspondant au modèle et à l'accessoire exacts est nécessaire.
 `;
 
         afficherResultat(
@@ -1018,7 +1156,85 @@ Une notice correspondant au modèle et à l'accessoire exacts est nécessaire.
     }
 
     /* ======================================================
-       AFFICHAGE DU RÉSULTAT
+       AFFICHAGE SPÉCIFIQUE REFNET
+    ====================================================== */
+
+    function afficherFicheRefnet(document, fiche, materiel) {
+
+        const zone = $("chantierReponse");
+
+        zone.hidden = false;
+
+        let niveauTexte =
+            fiche.niveau === "exact"
+                ? "Référence exacte reconnue dans la base"
+                : "Famille de matériel reconnue — référence complète à confirmer";
+
+        let accessoireTexte = "";
+
+        if (!fiche.accessoire.renseigne) {
+
+            accessoireTexte =
+                "Aucune référence de kit n'a été saisie. Les critères de sélection constructeur sont affichés pour aider à identifier le bon kit.";
+
+        } else if (fiche.accessoire.reconnu) {
+
+            accessoireTexte =
+                "Le code accessoire " +
+                fiche.accessoire.code +
+                " figure parmi les kits traités dans cette fiche constructeur.";
+
+        } else {
+
+            accessoireTexte =
+                "Le code accessoire saisi (" +
+                fiche.accessoire.code +
+                ") n'est pas reconnu dans cette fiche. Sa compatibilité doit être vérifiée séparément.";
+        }
+
+        zone.innerHTML = `
+            <h3>📗 Documentation constructeur Daikin</h3>
+
+            <div class="chantier-ok">
+                <strong>${echapper(niveauTexte)}</strong>
+                <p>${echapper(accessoireTexte)}</p>
+            </div>
+
+            <div class="chantier-resultat">
+                ${echapper(fiche.texte)}
+            </div>
+
+            <div class="chantier-alerte">
+                <strong>⚠️ Point de vigilance</strong>
+                <p>
+                    Les références de kits sont issues du manuel
+                    Daikin VRV 5-S pour la famille RXYSA4~6.
+                    Le choix définitif dépend de la puissance du groupe
+                    et de l'indice de capacité réel des unités raccordées
+                    en aval.
+                </p>
+                <p>
+                    Aucune distance entre deux Refnet n'est fournie
+                    par cette table de sélection.
+                </p>
+            </div>
+
+            <a class="chantier-source"
+                href="${echapper(document.url)}"
+                target="_blank"
+                rel="noopener noreferrer">
+                📄 Ouvrir le manuel officiel Daikin — page 27
+            </a>
+        `;
+
+        zone.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
+
+    /* ======================================================
+       AFFICHAGE GÉNÉRAL DU RÉSULTAT
     ====================================================== */
 
     function afficherResultat(titre, texte, document) {
