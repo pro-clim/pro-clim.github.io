@@ -1,8 +1,7 @@
-
 /* ==========================================================
    PRO CLIM — DIAGNOSTIC CVC
    Catalogue multi-constructeurs + diagnostic guidé
-   Version 2.0
+   Version 3.0 — Références sécurisées
    ========================================================== */
 
 (() => {
@@ -16,18 +15,19 @@
     '"': "&quot;", "'": "&#39;"
   }[c]));
 
+  const normalize = value =>
+    String(value || "").toUpperCase().replace(/[\s\-_.]/g, "");
+
   const S = {
     symptom: "",
     step: 0,
     answers: [],
-    fault: null
+    fault: null,
+    report: null
   };
 
   /* ========================================================
      1. CATALOGUE CONSTRUCTEURS
-     Les séries sont des familles de références.
-     Elles ne constituent pas toutes des modèles complets.
-     La référence de plaque peut être saisie manuellement.
      ======================================================== */
 
   const CATALOG = {
@@ -43,24 +43,11 @@
         "FTXH / RXH"
       ],
       "Multi-split": [
-        "2MXM",
-        "3MXM",
-        "4MXM",
-        "5MXM",
-        "MXM",
-        "Multi+"
+        "2MXM", "3MXM", "4MXM", "5MXM", "MXM", "Multi+"
       ],
       "Sky Air — Tertiaire": [
-        "FFA",
-        "FCAG",
-        "FBA",
-        "FDA",
-        "FHA",
-        "FNA",
-        "FUA",
-        "RZAG",
-        "RZASG",
-        "RZA"
+        "FFA", "FCAG", "FBA", "FDA", "FHA",
+        "FNA", "FUA", "RZAG", "RZASG", "RZA"
       ],
       "VRV 5-S": [
         "RXYSA4A7V1B",
@@ -70,726 +57,282 @@
         "RXYSA5A7Y1B",
         "RXYSA6A7Y1B"
       ],
-      "VRV 5": [
-        "RXYA",
-        "RXYA-A",
-        "RXYA-B",
-        "RXYQ"
-      ],
-      "VRV IV / IV+": [
-        "RXYQ",
-        "REYQ",
-        "RWEYQ",
-        "RXYTQ"
-      ],
-      "VRV récupération de chaleur": [
-        "REYQ",
-        "REYA",
-        "RWEYQ"
-      ],
+      "VRV 5": ["RXYA", "RXYA-A", "RXYA-B", "RXYQ"],
+      "VRV IV / IV+": ["RXYQ", "REYQ", "RWEYQ", "RXYTQ"],
+      "VRV récupération de chaleur": ["REYQ", "REYA", "RWEYQ"],
       "Altherma — PAC air/eau": [
-        "ERGA",
-        "EPGA",
-        "EDLA",
-        "EBLA",
-        "EHVH",
-        "EHBH",
-        "ETVH",
-        "ETBH"
+        "ERGA", "EPGA", "EDLA", "EBLA",
+        "EHVH", "EHBH", "ETVH", "ETBH"
       ],
-      "Rooftop / Packaged": [
-        "UAT",
-        "UATY",
-        "UATQ"
-      ],
+      "Rooftop / Packaged": ["UAT", "UATY", "UATQ"],
       "Groupes d'eau glacée / Applied": [
-        "EWAD",
-        "EWAT",
-        "EWAH",
-        "EWWD",
-        "EWYT"
+        "EWAD", "EWAT", "EWAH", "EWWD", "EWYT"
       ]
     },
 
     "Mitsubishi Electric": {
       "Résidentiel — Série M": [
-        "MSZ-HR",
-        "MSZ-AY",
-        "MSZ-AP",
-        "MSZ-EF",
-        "MSZ-LN",
-        "MSZ-FT",
-        "MSZ-FH",
-        "MSZ-RW",
-        "MFZ-KT",
-        "SFZ-M"
+        "MSZ-HR", "MSZ-AY", "MSZ-AP", "MSZ-EF",
+        "MSZ-LN", "MSZ-FT", "MSZ-FH", "MSZ-RW",
+        "MFZ-KT", "SFZ-M"
       ],
       "Groupes extérieurs mono-split": [
-        "MUZ-HR",
-        "MUZ-AY",
-        "MUZ-AP",
-        "MUZ-EF",
-        "MUZ-LN",
-        "MUZ-FT",
-        "MUZ-FH",
-        "SUZ-M",
-        "PUZ-M"
+        "MUZ-HR", "MUZ-AY", "MUZ-AP", "MUZ-EF",
+        "MUZ-LN", "MUZ-FT", "MUZ-FH", "SUZ-M", "PUZ-M"
       ],
       "Multi-split": [
-        "MXZ-2F",
-        "MXZ-3F",
-        "MXZ-4F",
-        "MXZ-5F",
-        "MXZ-6F",
-        "MXZ-H",
-        "MXZ-F",
-        "PXZ-F"
+        "MXZ-2F", "MXZ-3F", "MXZ-4F",
+        "MXZ-5F", "MXZ-6F", "MXZ-H", "MXZ-F", "PXZ-F"
       ],
       "Mr Slim — Tertiaire": [
-        "PEAD-M",
-        "PEA-M",
-        "PLA-M",
-        "PCA-M",
-        "PKA-M",
-        "PSA-M",
-        "SEZ-M",
-        "SLZ-M",
-        "PUMY",
-        "PUZ-M"
+        "PEAD-M", "PEA-M", "PLA-M", "PCA-M",
+        "PKA-M", "PSA-M", "SEZ-M", "SLZ-M", "PUMY", "PUZ-M"
       ],
       "City Multi — VRF": [
-        "PUHY",
-        "PURY",
-        "PUMY",
-        "PQRY",
-        "PURY-P",
-        "PUHY-P"
+        "PUHY", "PURY", "PUMY", "PQRY",
+        "PURY-P", "PUHY-P", "PUCY", "PUMY-CP"
       ],
       "Ecodan — PAC air/eau": [
-        "PUZ-WM",
-        "PUZ-SWM",
-        "PUZ-SHWM",
-        "SUZ-SWM",
-        "ERSE",
-        "ERSD",
-        "ERST"
+        "PUZ-WM", "PUZ-SWM", "PUZ-SHWM",
+        "SUZ-SWM", "ERSE", "ERSD", "ERST"
       ],
       "Zubadan / Hyper Heating": [
-        "PUHZ-SHW",
-        "PUZ-SHWM",
-        "PUHZ-HW"
+        "PUHZ-SHW", "PUZ-SHWM", "PUHZ-HW"
       ],
-      "Ventilation Lossnay": [
-        "LGH",
-        "VL"
-      ]
+      "Ventilation Lossnay": ["LGH", "VL"]
     },
 
     "Mitsubishi Heavy Industries": {
-      "Résidentiel — Split mural": [
-        "SRK",
-        "SRC",
-        "SRF",
-        "SRR"
-      ],
-      "Multi-split": [
-        "SCM",
-        "SRK multi"
-      ],
+      "Résidentiel — Split mural": ["SRK", "SRC", "SRF", "SRR"],
+      "Multi-split": ["SCM", "SRK multi"],
       "Tertiaire — PAC commerciale": [
-        "FDT",
-        "FDTC",
-        "FDK",
-        "FDC",
-        "FDU",
-        "FDE",
-        "FDUM"
+        "FDT", "FDTC", "FDK", "FDC", "FDU", "FDE", "FDUM"
       ],
-      "DRV / VRF — KX": [
-        "KXZX",
-        "KXZ",
-        "KXZR",
-        "KX"
-      ],
-      "PAC air/eau": [
-        "Hydrolution",
-        "Q-ton"
-      ]
+      "DRV / VRF — KX": ["KXZX", "KXZ", "KXZR", "KX"],
+      "PAC air/eau": ["Hydrolution", "Q-ton"]
     },
 
     "Samsung": {
       "Résidentiel — Split mural": [
-        "AR09",
-        "AR12",
-        "AR18",
-        "AR24",
-        "WindFree",
-        "Cebu",
-        "Luzon"
+        "AR09", "AR12", "AR18", "AR24",
+        "WindFree", "Cebu", "Luzon"
       ],
-      "Multi-split": [
-        "AJ",
-        "AJN",
-        "AJT",
-        "FJM"
-      ],
-      "Commercial — CAC": [
-        "AC",
-        "ACN",
-        "AC071",
-        "AC100",
-        "AC140"
-      ],
-      "Gainable / Cassette": [
-        "AM",
-        "AC",
-        "AV",
-        "AJ"
-      ],
+      "Multi-split": ["AJ", "AJN", "AJT", "FJM"],
+      "Commercial — CAC": ["AC", "ACN", "AC071", "AC100", "AC140"],
+      "Gainable / Cassette": ["AM", "AC", "AV", "AJ"],
       "DRV / VRF — DVM": [
-        "AM080",
-        "AM100",
-        "AM120",
-        "AM140",
-        "AM160",
-        "DVM S",
-        "DVM S2",
-        "DVM S Mini",
-        "DVM S Water",
-        "DVM S HR"
+        "AM080", "AM100", "AM120", "AM140", "AM160",
+        "DVM S", "DVM S2", "DVM S Mini", "DVM S Water", "DVM S HR"
       ],
       "PAC air/eau — EHS": [
-        "AE",
-        "AM",
-        "EHS Mono",
-        "EHS Split",
-        "EHS HT"
+        "AE", "AM", "EHS Mono", "EHS Split", "EHS HT"
       ]
     },
 
     "Atlantic / Fujitsu": {
       "Fujitsu — Résidentiel": [
-        "ASYG",
-        "ASHG",
-        "AOYG",
-        "AOHG",
-        "ASY",
-        "ASH"
+        "ASYG", "ASHG", "AOYG", "AOHG", "ASY", "ASH"
       ],
       "Fujitsu — Multi-split": [
-        "AOYG multi",
-        "ASYG multi",
-        "AOHG multi"
+        "AOYG multi", "ASYG multi", "AOHG multi"
       ],
-      "Fujitsu — Tertiaire": [
-        "ARYG",
-        "ABYG",
-        "AUYG",
-        "ARXG",
-        "AUXG"
-      ],
+      "Fujitsu — Tertiaire": ["ARYG", "ABYG", "AUYG", "ARXG", "AUXG"],
       "Fujitsu — VRF Airstage": [
-        "AJY",
-        "AIRSTAGE V",
-        "AIRSTAGE J",
-        "AIRSTAGE VR-II"
+        "AJY", "AIRSTAGE V", "AIRSTAGE J", "AIRSTAGE VR-II"
       ],
       "Atlantic — PAC air/eau Alféa": [
-        "Alféa Extensa",
-        "Alféa Excellia",
-        "Alféa Duo",
-        "Alféa Hybrid"
+        "Alféa Extensa", "Alféa Excellia", "Alféa Duo", "Alféa Hybrid"
       ],
-      "Atlantic — Climatisation": [
-        "Takao",
-        "Kazendo",
-        "Shogun"
-      ]
+      "Atlantic — Climatisation": ["Takao", "Kazendo", "Shogun"]
     },
 
     "LG": {
       "Résidentiel — Split mural": [
-        "S09",
-        "S12",
-        "PC",
-        "Dualcool",
-        "Artcool",
-        "Standard Plus"
+        "S09", "S12", "PC", "Dualcool", "Artcool", "Standard Plus"
       ],
-      "Multi-split": [
-        "MU",
-        "FM",
-        "Multi F"
-      ],
+      "Multi-split": ["MU", "FM", "Multi F"],
       "Commercial — Gainable / Cassette": [
-        "UM",
-        "UU",
-        "UB",
-        "CT",
-        "ARNU",
-        "ABN"
+        "UM", "UU", "UB", "CT", "ARNU", "ABN"
       ],
       "DRV / VRF — Multi V": [
-        "Multi V",
-        "Multi V i",
-        "Multi V S",
-        "Multi V 5",
-        "Multi V Water",
-        "ARUN",
-        "ARUB"
+        "Multi V", "Multi V i", "Multi V S",
+        "Multi V 5", "Multi V Water", "ARUN", "ARUB"
       ],
       "PAC air/eau — Therma V": [
-        "HM",
-        "HU",
-        "HN",
-        "Therma V Monobloc",
-        "Therma V Split"
+        "HM", "HU", "HN", "Therma V Monobloc", "Therma V Split"
       ]
     },
 
     "Panasonic": {
       "Résidentiel — Split mural": [
-        "CS-TZ",
-        "CS-Etherea",
-        "CS-XZ",
-        "CS-Z",
-        "CS-PZ",
-        "CU-TZ",
-        "CU-Z"
+        "CS-TZ", "CS-Etherea", "CS-XZ", "CS-Z",
+        "CS-PZ", "CU-TZ", "CU-Z"
       ],
       "Multi-split": [
-        "CU-2Z",
-        "CU-3Z",
-        "CU-4Z",
-        "CU-5Z",
-        "CU-2E",
-        "CU-3E"
+        "CU-2Z", "CU-3Z", "CU-4Z", "CU-5Z", "CU-2E", "CU-3E"
       ],
       "PACi — Tertiaire": [
-        "S-36",
-        "S-50",
-        "S-60",
-        "S-71",
-        "S-100",
-        "S-125",
-        "U-"
+        "S-36", "S-50", "S-60", "S-71", "S-100", "S-125", "U-"
       ],
       "Cassette / Gainable / Console": [
-        "S-60PU",
-        "S-71PU",
-        "S-100PU",
-        "S-125PU",
-        "S-100PF",
-        "S-125PF"
+        "S-60PU", "S-71PU", "S-100PU",
+        "S-125PU", "S-100PF", "S-125PF"
       ],
       "DRV / VRF — ECOi": [
-        "U-",
-        "ECOi EX",
-        "ECOi 2WAY",
-        "ECOi 3WAY",
-        "ECOi MINI"
+        "U-", "ECOi EX", "ECOi 2WAY", "ECOi 3WAY", "ECOi MINI"
       ],
       "PAC air/eau — Aquarea": [
-        "WH-MDC",
-        "WH-MXC",
-        "WH-SDC",
-        "WH-SXC",
-        "Aquarea T-CAP",
-        "Aquarea High Performance"
+        "WH-MDC", "WH-MXC", "WH-SDC", "WH-SXC",
+        "Aquarea T-CAP", "Aquarea High Performance"
       ]
     },
 
     "Toshiba": {
       "Résidentiel — Split mural": [
-        "RAS-B",
-        "RAS-10",
-        "RAS-13",
-        "RAS-16",
-        "Seiya",
-        "Shorai",
-        "Daiseikai"
+        "RAS-B", "RAS-10", "RAS-13", "RAS-16",
+        "Seiya", "Shorai", "Daiseikai"
       ],
-      "Multi-split": [
-        "RAS-M",
-        "RAS-2M",
-        "RAS-3M",
-        "RAS-4M",
-        "RAS-5M"
-      ],
-      "Tertiaire — Digital Inverter": [
-        "RAV-GM",
-        "RAV-RM",
-        "RAV-SM",
-        "RAV-HM"
-      ],
-      "Gainable / Cassette": [
-        "RAV-RM",
-        "RAV-SM",
-        "RAV-GM",
-        "MMD"
-      ],
+      "Multi-split": ["RAS-M", "RAS-2M", "RAS-3M", "RAS-4M", "RAS-5M"],
+      "Tertiaire — Digital Inverter": ["RAV-GM", "RAV-RM", "RAV-SM", "RAV-HM"],
+      "Gainable / Cassette": ["RAV-RM", "RAV-SM", "RAV-GM", "MMD"],
       "DRV / VRF — SMMS": [
-        "MMY",
-        "SMMS-u",
-        "SHRM-u",
-        "SHRM Advance",
-        "Mini SMMS"
+        "MMY", "SMMS-u", "SHRM-u", "SHRM Advance", "Mini SMMS"
       ],
-      "PAC air/eau — Estia": [
-        "HWS",
-        "Estia",
-        "HWT"
-      ]
+      "PAC air/eau — Estia": ["HWS", "Estia", "HWT"]
     },
 
     "Hitachi": {
       "Résidentiel — airHome": [
-        "RAK",
-        "RAC",
-        "airHome 400",
-        "airHome 600",
-        "airHome 800"
+        "RAK", "RAC", "airHome 400", "airHome 600", "airHome 800"
       ],
-      "Multi-split": [
-        "RAM",
-        "RAC multi"
-      ],
-      "Tertiaire — Utopia": [
-        "RAS",
-        "RPI",
-        "RPC",
-        "RPK",
-        "RPF"
-      ],
+      "Multi-split": ["RAM", "RAC multi"],
+      "Tertiaire — Utopia": ["RAS", "RPI", "RPC", "RPK", "RPF"],
       "DRV / VRF — Set Free": [
-        "RAS",
-        "RCS",
-        "Set Free Sigma",
-        "Set Free Mini",
-        "Set Free FSXN"
+        "RAS", "RCS", "Set Free Sigma", "Set Free Mini", "Set Free FSXN"
       ],
       "PAC air/eau — Yutaki": [
-        "Yutaki S",
-        "Yutaki S Combi",
-        "Yutaki M",
-        "Yutaki H"
+        "Yutaki S", "Yutaki S Combi", "Yutaki M", "Yutaki H"
       ]
     },
 
     "Toshiba Carrier": {
-      "Résidentiel / Split": [
-        "RAS",
-        "RAV"
-      ],
-      "Multi-split": [
-        "RAS-M",
-        "RAS-2M",
-        "RAS-3M"
-      ],
-      "Tertiaire": [
-        "RAV",
-        "MMK",
-        "MMD"
-      ],
-      "VRF / SMMS": [
-        "MMY",
-        "SMMS",
-        "SHRM",
-        "Mini SMMS"
-      ],
-      "Applied / Eau glacée": [
-        "Carrier Aqua",
-        "AquaSnap",
-        "Toshiba Applied"
-      ]
+      "Résidentiel / Split": ["RAS", "RAV"],
+      "Multi-split": ["RAS-M", "RAS-2M", "RAS-3M"],
+      "Tertiaire": ["RAV", "MMK", "MMD"],
+      "VRF / SMMS": ["MMY", "SMMS", "SHRM", "Mini SMMS"],
+      "Applied / Eau glacée": ["Carrier Aqua", "AquaSnap", "Toshiba Applied"]
     },
 
     "Midea": {
       "Résidentiel — Split mural": [
-        "MSAG",
-        "MSAF",
-        "Xtreme Save",
-        "Breezeless",
-        "All Easy Pro"
+        "MSAG", "MSAF", "Xtreme Save", "Breezeless", "All Easy Pro"
       ],
-      "Multi-split": [
-        "M2OE",
-        "M3OE",
-        "M4OE",
-        "M5OE"
-      ],
-      "Tertiaire — Commercial": [
-        "MCD",
-        "MCA",
-        "MTI",
-        "MUE",
-        "MOU"
-      ],
+      "Multi-split": ["M2OE", "M3OE", "M4OE", "M5OE"],
+      "Tertiaire — Commercial": ["MCD", "MCA", "MTI", "MUE", "MOU"],
       "DRV / VRF": [
-        "V6",
-        "V6R",
-        "V8",
-        "V8i",
-        "V9",
-        "Atom T Mini VRF"
+        "V6", "V6R", "V8", "V8i", "V9", "Atom T Mini VRF"
       ],
       "PAC air/eau — M-Thermal": [
-        "M-Thermal",
-        "M-Thermal Arctic",
-        "M-Thermal Mono",
-        "M-Thermal Split"
+        "M-Thermal", "M-Thermal Arctic", "M-Thermal Mono", "M-Thermal Split"
       ]
     },
 
     "Gree": {
       "Résidentiel — Split mural": [
-        "Pular",
-        "Fair",
-        "Amber",
-        "Clivia",
-        "Lomo",
-        "GWH"
+        "Pular", "Fair", "Amber", "Clivia", "Lomo", "GWH"
       ],
-      "Multi-split": [
-        "GWHD",
-        "Free Match",
-        "Multi"
-      ],
-      "Tertiaire": [
-        "GUD",
-        "GKH",
-        "GREE Commercial"
-      ],
-      "DRV / VRF — GMV": [
-        "GMV5",
-        "GMV6",
-        "GMV",
-        "GMV Mini"
-      ],
-      "PAC air/eau — Versati": [
-        "Versati",
-        "Versati III",
-        "Versati IV"
-      ]
+      "Multi-split": ["GWHD", "Free Match", "Multi"],
+      "Tertiaire": ["GUD", "GKH", "GREE Commercial"],
+      "DRV / VRF — GMV": ["GMV5", "GMV6", "GMV", "GMV Mini"],
+      "PAC air/eau — Versati": ["Versati", "Versati III", "Versati IV"]
     },
 
     "Haier": {
       "Résidentiel — Split mural": [
-        "Flexis",
-        "Pearl",
-        "Revive",
-        "Expert",
-        "Jade",
-        "Tundra"
+        "Flexis", "Pearl", "Revive", "Expert", "Jade", "Tundra"
       ],
-      "Multi-split": [
-        "2U",
-        "3U",
-        "4U",
-        "5U"
-      ],
-      "Tertiaire": [
-        "AB",
-        "AD",
-        "AC",
-        "AU"
-      ],
-      "DRV / VRF — MRV": [
-        "MRV",
-        "MRV V",
-        "MRV S",
-        "MRV Water"
-      ],
-      "PAC air/eau": [
-        "Super Aqua",
-        "Monobloc",
-        "Split"
-      ]
+      "Multi-split": ["2U", "3U", "4U", "5U"],
+      "Tertiaire": ["AB", "AD", "AC", "AU"],
+      "DRV / VRF — MRV": ["MRV", "MRV V", "MRV S", "MRV Water"],
+      "PAC air/eau": ["Super Aqua", "Monobloc", "Split"]
     },
 
     "Hisense": {
       "Résidentiel — Split mural": [
-        "Easy Smart",
-        "Energy Pro",
-        "New Comfort",
-        "Hi-Smart"
+        "Easy Smart", "Energy Pro", "New Comfort", "Hi-Smart"
       ],
-      "Multi-split": [
-        "AMW",
-        "Multi"
-      ],
-      "Tertiaire": [
-        "AUV",
-        "AUD",
-        "AVW"
-      ],
-      "DRV / VRF": [
-        "Hi-FLEXi",
-        "Hi-FLEXi S",
-        "Hi-FLEXi M"
-      ],
-      "PAC air/eau": [
-        "Hi-Therma",
-        "Hi-Therma Monobloc",
-        "Hi-Therma Split"
-      ]
+      "Multi-split": ["AMW", "Multi"],
+      "Tertiaire": ["AUV", "AUD", "AVW"],
+      "DRV / VRF": ["Hi-FLEXi", "Hi-FLEXi S", "Hi-FLEXi M"],
+      "PAC air/eau": ["Hi-Therma", "Hi-Therma Monobloc", "Hi-Therma Split"]
     },
 
     "Carrier": {
-      "Résidentiel — Split": [
-        "42QHG",
-        "42QHP",
-        "42QSS",
-        "42QHC"
-      ],
-      "Multi-split": [
-        "38QUS",
-        "38Q",
-        "42Q"
-      ],
-      "Tertiaire": [
-        "42",
-        "40",
-        "42QSS",
-        "40VM"
-      ],
-      "VRF": [
-        "XCT8",
-        "40V",
-        "38VM",
-        "XPower"
-      ],
-      "Groupes d'eau glacée": [
-        "AquaSnap",
-        "30RB",
-        "30RBP",
-        "30XW"
-      ],
-      "PAC air/eau": [
-        "AquaSnap",
-        "AquaForce"
-      ]
+      "Résidentiel — Split": ["42QHG", "42QHP", "42QSS", "42QHC"],
+      "Multi-split": ["38QUS", "38Q", "42Q"],
+      "Tertiaire": ["42", "40", "42QSS", "40VM"],
+      "VRF": ["XCT8", "40V", "38VM", "XPower"],
+      "Groupes d'eau glacée": ["AquaSnap", "30RB", "30RBP", "30XW"],
+      "PAC air/eau": ["AquaSnap", "AquaForce"]
     },
 
     "Trane": {
       "Groupes d'eau glacée": [
-        "CGAM",
-        "RTAC",
-        "RTWD",
-        "Sintesis",
-        "CenTraVac"
+        "CGAM", "RTAC", "RTWD", "Sintesis", "CenTraVac"
       ],
-      "Rooftop": [
-        "Voyager",
-        "Precedent",
-        "Foundation"
-      ],
+      "Rooftop": ["Voyager", "Precedent", "Foundation"],
       "CTA / Traitement d'air": [
-        "Climate Changer",
-        "M-Series",
-        "Performance Climate Changer"
+        "Climate Changer", "M-Series", "Performance Climate Changer"
       ],
-      "PAC / Pompes à chaleur": [
-        "Sintesis",
-        "Flex",
-        "Airfinity"
-      ],
-      "DRV / VRF": [
-        "Trane VRF",
-        "Mini VRF"
-      ]
+      "PAC / Pompes à chaleur": ["Sintesis", "Flex", "Airfinity"],
+      "DRV / VRF": ["Trane VRF", "Mini VRF"]
     },
 
     "York": {
-      "Résidentiel / Split": [
-        "YH",
-        "YZ",
-        "YFK"
-      ],
-      "Multi-split": [
-        "York Multi"
-      ],
-      "VRF": [
-        "Mini VRF",
-        "Full VRF",
-        "YV",
-        "YVA"
-      ],
-      "Groupes d'eau glacée": [
-        "YCAV",
-        "YVAA",
-        "YVWA",
-        "YK"
-      ],
-      "Rooftop / CTA": [
-        "Predator",
-        "Sunline",
-        "Air Handling"
-      ]
+      "Résidentiel / Split": ["YH", "YZ", "YFK"],
+      "Multi-split": ["York Multi"],
+      "VRF": ["Mini VRF", "Full VRF", "YV", "YVA"],
+      "Groupes d'eau glacée": ["YCAV", "YVAA", "YVWA", "YK"],
+      "Rooftop / CTA": ["Predator", "Sunline", "Air Handling"]
     },
 
     "Lennox": {
-      "Résidentiel — Split / PAC": [
-        "EL",
-        "ML",
-        "SL",
-        "XP",
-        "XC"
-      ],
-      "Multi-split": [
-        "Lennox Multi"
-      ],
+      "Résidentiel — Split / PAC": ["EL", "ML", "SL", "XP", "XC"],
+      "Multi-split": ["Lennox Multi"],
       "Tertiaire / Rooftop": [
-        "Energence",
-        "Prodigy",
-        "L Series",
-        "K Series"
+        "Energence", "Prodigy", "L Series", "K Series"
       ],
-      "CTA / Traitement d'air": [
-        "Lennox Air Handling"
-      ]
+      "CTA / Traitement d'air": ["Lennox Air Handling"]
     },
 
     "Bosch": {
       "Résidentiel — Split": [
-        "Climate 5000",
-        "Climate 7000i",
-        "Climate 3000i"
+        "Climate 5000", "Climate 7000i", "Climate 3000i"
       ],
-      "Multi-split": [
-        "Climate Multi"
-      ],
+      "Multi-split": ["Climate Multi"],
       "Tertiaire / Cassette / Gainable": [
-        "Climate 5000M",
-        "Climate 5000i",
-        "Climate 7000"
+        "Climate 5000M", "Climate 5000i", "Climate 7000"
       ],
       "VRF — Air Flux": [
-        "Air Flux 4300 A",
-        "Air Flux 5300 A",
-        "Air Flux AF"
+        "Air Flux 4300 A", "Air Flux 5300 A", "Air Flux AF"
       ],
       "PAC air/eau": [
-        "Compress 3000",
-        "Compress 5000",
-        "Compress 6000",
-        "Compress 7000"
+        "Compress 3000", "Compress 5000", "Compress 6000", "Compress 7000"
       ]
     },
 
     "Autre marque": {
-      "Autre système": [
-        "Référence à saisir manuellement"
-      ]
+      "Autre système": ["Référence à saisir manuellement"]
     }
   };
 
   /* ========================================================
-     2. BASE DE PROCÉDURES DOCUMENTÉES
-     Une procédure n'est affichée que si elle existe ici.
+     2. BASE DE PROCÉDURES CONSTRUCTEUR
+     Les entrées sont limitées aux documents identifiés.
      ======================================================== */
 
   const DATABASE = {
+
     "Daikin": {
       "VRV 5-S": {
         models: [
@@ -800,14 +343,11 @@
           "RXYSA5A7Y1B",
           "RXYSA6A7Y1B"
         ],
-
         codes: {
           "U4-01": {
             title: "Erreur de transmission entre unités intérieures et unité extérieure",
             meaning: "La carte principale détecte une transmission anormale sur la ligne F1-F2 vers les unités intérieures.",
             effect: "Le système peut s'arrêter de fonctionner.",
-            reset: "Réinitialisation automatique selon les conditions de fonctionnement.",
-
             source: {
               manufacturer: "Daikin",
               document: "Service Manual VRV 5-S",
@@ -817,7 +357,6 @@
               pages: "129 à 130",
               url: "https://manuals.plus/m/1ce2518f699a93a42189544c6b3b060a654ef84f8919b07d0c83bdaa6f8c884b.pdf"
             },
-
             steps: [
               {
                 title: "Alimentation électrique",
@@ -887,6 +426,515 @@
                 noTitle: "Unité intérieure inactive",
                 noText: "Identifier précisément l'unité qui ne démarre pas. Contrôler son alimentation électrique puis sa carte électronique principale.",
                 reference: "Réglage 2-5 — § 7.9 ; § 4.14"
+              }
+            ]
+          }
+        }
+      }
+    },
+
+    "Samsung": {
+      "DRV / VRF — DVM": {
+        models: ["DVM S"],
+        codes: {
+          "E121": {
+            title: "Sonde de température intérieure — anomalie",
+            meaning: "Le manuel DVM S répertorie E121 comme défaut de sonde de température intérieure : circuit ouvert ou court-circuit.",
+            effect: "La mesure de température intérieure peut être incorrecte.",
+            source: {
+              manufacturer: "Samsung",
+              document: "DVM S Indoor Unit Service Manual",
+              reference: "Manuel de service DVM S",
+              revision: "Document constructeur consulté",
+              chapter: "Liste des codes défaut",
+              pages: "Selon version du manuel",
+              url: "https://s3.amazonaws.com/samsung-files/Tech_Files/DVM/DVM%20S/Service%20Manuals/DVM%20S_wind%20free%204way%20M4way_SERVICE%20MANUAL-00211E_1_180206.pdf"
+            },
+            steps: [
+              {
+                title: "Identification de la sonde",
+                question: "La sonde concernée a-t-elle été identifiée sur le schéma de l'unité exacte ?",
+                instruction: "Identifier la sonde de température intérieure à partir du schéma électrique et de la référence complète de l'unité intérieure.",
+                detail: "Ne pas déduire le connecteur ou le repère uniquement à partir du code défaut.",
+                yesLabel: "Sonde identifiée",
+                noLabel: "Identification incertaine",
+                noTitle: "Identification nécessaire",
+                noText: "Retrouver le schéma correspondant à la référence complète de l'unité avant toute mesure.",
+                reference: "Schéma électrique constructeur"
+              },
+              {
+                title: "Connectique de sonde",
+                question: "Le connecteur et le câblage de la sonde sont-ils conformes ?",
+                instruction: "Après consignation, contrôler visuellement le connecteur, le maintien des broches, le câble et les traces d'oxydation ou d'échauffement.",
+                detail: "Ne pas manipuler les connecteurs sur un circuit alimenté.",
+                yesLabel: "Connectique conforme",
+                noLabel: "Anomalie constatée",
+                noTitle: "Défaut de connectique",
+                noText: "Corriger le raccordement ou remplacer le faisceau uniquement après identification de la pièce adaptée.",
+                reference: "Schéma électrique constructeur"
+              },
+              {
+                title: "Contrôle de la sonde",
+                question: "La valeur mesurée correspond-elle à la courbe constructeur à la température réelle ?",
+                instruction: "Sonde isolée électriquement de la carte, mesurer sa résistance et comparer à la table constructeur correspondant à cette sonde.",
+                detail: "Ne pas appliquer une valeur générique NTC : les caractéristiques doivent correspondre à la référence exacte.",
+                yesLabel: "Valeur conforme",
+                noLabel: "Valeur non conforme",
+                noTitle: "Sonde à approfondir",
+                noText: "Comparer de nouveau la mesure à la courbe exacte. Vérifier la température de la sonde et la qualité du contact thermique.",
+                reference: "Table résistance / température constructeur"
+              }
+            ]
+          },
+
+          "E122": {
+            title: "Sonde d'entrée d'évaporateur — anomalie",
+            meaning: "Le manuel DVM S répertorie E122 comme défaut de sonde d'entrée d'évaporateur.",
+            effect: "La régulation ne dispose plus d'une mesure fiable à cet emplacement.",
+            source: {
+              manufacturer: "Samsung",
+              document: "DVM S Indoor Unit Service Manual",
+              reference: "Manuel de service DVM S",
+              revision: "Document constructeur consulté",
+              chapter: "Liste des codes défaut",
+              pages: "Selon version du manuel",
+              url: "https://s3.amazonaws.com/samsung-files/Tech_Files/DVM/DVM%20S/Service%20Manuals/DVM%20S_wind%20free%204way%20M4way_SERVICE%20MANUAL-00211E_1_180206.pdf"
+            },
+            steps: [
+              {
+                title: "Identification de la sonde",
+                question: "La sonde d'entrée d'évaporateur est-elle identifiée sur le schéma exact ?",
+                instruction: "Repérer la sonde et son connecteur avec le schéma correspondant à la référence de l'unité.",
+                detail: "Ne pas confondre sonde d'entrée et sonde de sortie de batterie.",
+                yesLabel: "Sonde identifiée",
+                noLabel: "Identification incertaine",
+                noTitle: "Identification nécessaire",
+                noText: "Consulter le schéma électrique et la nomenclature de l'unité.",
+                reference: "Schéma constructeur"
+              },
+              {
+                title: "Câblage et connectique",
+                question: "Le faisceau et le connecteur sont-ils conformes ?",
+                instruction: "Après consignation, inspecter le câble, les broches et les connexions.",
+                detail: "Rechercher coupure, mauvais contact ou oxydation.",
+                yesLabel: "Conforme",
+                noLabel: "Anomalie",
+                noTitle: "Défaut de câblage",
+                noText: "Corriger le défaut de connexion identifié avant de remplacer la sonde.",
+                reference: "Schéma constructeur"
+              },
+              {
+                title: "Mesure de la sonde",
+                question: "La résistance correspond-elle à la courbe constructeur ?",
+                instruction: "Mesurer la résistance sonde isolée et comparer à la courbe correspondant à la référence exacte.",
+                detail: "Aucune valeur universelle ne doit être appliquée.",
+                yesLabel: "Conforme",
+                noLabel: "Non conforme",
+                noTitle: "Sonde à contrôler",
+                noText: "Vérifier la mesure, la température réelle et la référence de la sonde.",
+                reference: "Courbe constructeur"
+              }
+            ]
+          },
+
+          "E123": {
+            title: "Sonde de sortie d'évaporateur — anomalie",
+            meaning: "Le manuel DVM S répertorie E123 comme défaut de sonde de sortie d'évaporateur.",
+            effect: "La régulation peut recevoir une température incorrecte.",
+            source: {
+              manufacturer: "Samsung",
+              document: "DVM S Indoor Unit Service Manual",
+              reference: "Manuel de service DVM S",
+              revision: "Document constructeur consulté",
+              chapter: "Liste des codes défaut",
+              pages: "Selon version du manuel",
+              url: "https://s3.amazonaws.com/samsung-files/Tech_Files/DVM/DVM%20S/Service%20Manuals/DVM%20S_wind%20free%204way%20M4way_SERVICE%20MANUAL-00211E_1_180206.pdf"
+            },
+            steps: [
+              {
+                title: "Identification",
+                question: "La sonde de sortie d'évaporateur est-elle identifiée sur le schéma exact ?",
+                instruction: "Vérifier le repère de la sonde et son connecteur à partir du schéma de l'unité.",
+                detail: "Ne pas confondre avec la sonde d'entrée d'évaporateur.",
+                yesLabel: "Identifiée",
+                noLabel: "Non identifiée",
+                noTitle: "Identification nécessaire",
+                noText: "Consulter le schéma exact de l'unité.",
+                reference: "Schéma constructeur"
+              },
+              {
+                title: "Connectique",
+                question: "Le câblage est-il conforme ?",
+                instruction: "Après consignation, inspecter le connecteur et le faisceau.",
+                detail: "Rechercher coupure, mauvais contact ou oxydation.",
+                yesLabel: "Conforme",
+                noLabel: "Anomalie",
+                noTitle: "Défaut de connectique",
+                noText: "Corriger la connexion après identification de la pièce.",
+                reference: "Schéma constructeur"
+              },
+              {
+                title: "Sonde",
+                question: "La valeur mesurée correspond-elle à la courbe constructeur ?",
+                instruction: "Comparer la résistance mesurée à la table correspondant à la sonde et à sa température.",
+                detail: "Ne pas appliquer de courbe NTC générique.",
+                yesLabel: "Conforme",
+                noLabel: "Non conforme",
+                noTitle: "Sonde à contrôler",
+                noText: "Vérifier la mesure et la référence exacte de la sonde.",
+                reference: "Table constructeur"
+              }
+            ]
+          },
+
+          "E154": {
+            title: "Défaut ventilateur intérieur",
+            meaning: "Le manuel DVM S répertorie E154 comme anomalie du ventilateur intérieur.",
+            effect: "Le débit d'air peut être interrompu ou insuffisant.",
+            source: {
+              manufacturer: "Samsung",
+              document: "DVM S Indoor Unit Service Manual",
+              reference: "Manuel de service DVM S",
+              revision: "Document constructeur consulté",
+              chapter: "Liste des codes défaut",
+              pages: "Selon version du manuel",
+              url: "https://s3.amazonaws.com/samsung-files/Tech_Files/DVM/DVM%20S/Service%20Manuals/DVM%20S_wind%20free%204way%20M4way_SERVICE%20MANUAL-00211E_1_180206.pdf"
+            },
+            steps: [
+              {
+                title: "Inspection mécanique",
+                question: "La turbine tourne-t-elle librement hors tension ?",
+                instruction: "Après consignation et vérification d'absence de tension, contrôler la turbine, les obstacles et les frottements.",
+                detail: "Ne jamais introduire les mains dans une turbine alimentée.",
+                yesLabel: "Rotation libre",
+                noLabel: "Blocage ou frottement",
+                noTitle: "Anomalie mécanique",
+                noText: "Identifier la cause du blocage ou du frottement avant toute remise en service.",
+                reference: "Contrôle mécanique"
+              },
+              {
+                title: "Connectique moteur",
+                question: "Le câblage moteur et ses connecteurs sont-ils conformes au schéma ?",
+                instruction: "Contrôler le faisceau, les connecteurs et l'état des broches après consignation.",
+                detail: "Le brochage dépend du modèle exact.",
+                yesLabel: "Conforme",
+                noLabel: "Anomalie",
+                noTitle: "Défaut de câblage",
+                noText: "Corriger le défaut identifié en suivant le schéma exact.",
+                reference: "Schéma constructeur"
+              },
+              {
+                title: "Contrôle électronique",
+                question: "Le moteur et la commande ont-ils été contrôlés selon la procédure exacte ?",
+                instruction: "Effectuer les contrôles moteur, alimentation et commande selon le manuel de service de l'unité.",
+                detail: "Ne pas appliquer de tension ou de valeur de résistance générique à un moteur électronique.",
+                yesLabel: "Contrôle conforme",
+                noLabel: "Anomalie constatée",
+                noTitle: "Contrôle complémentaire requis",
+                noText: "Identifier si l'anomalie concerne le moteur, son alimentation ou la carte de commande à l'aide de la procédure constructeur.",
+                reference: "Manuel de service exact"
+              }
+            ]
+          }
+        }
+      }
+    },
+
+    "Mitsubishi Electric": {
+      "City Multi — VRF": {
+        models: ["PUCY", "PUMY-CP"],
+        codes: {
+          "6608": {
+            title: "Absence de réponse de l'unité concernée",
+            meaning: "Le document Mitsubishi City Multi répertorie le code 6608 comme absence de réponse.",
+            effect: "La communication avec l'équipement concerné est anormale.",
+            source: {
+              manufacturer: "Mitsubishi Electric",
+              document: "City Multi Error Code",
+              reference: "CityMultiErrorCode V3",
+              revision: "13 décembre 2024",
+              chapter: "Codes de communication",
+              pages: "Selon modèle",
+              url: "https://www.mitsubishielectric.com.sg/getmedia/d80ea241-92ab-43d3-a6ae-331eba54394f/CityMultiErrorCode_V3.pdf"
+            },
+            steps: [
+              {
+                title: "Identification de l'unité",
+                question: "L'unité en défaut et son adresse ont-elles été identifiées ?",
+                instruction: "Relever l'adresse, l'unité concernée et l'historique des défauts.",
+                detail: "Ne pas intervenir sur une unité sans confirmer son identification.",
+                yesLabel: "Identifiée",
+                noLabel: "Non identifiée",
+                noTitle: "Identification nécessaire",
+                noText: "Identifier l'unité et son adresse avec l'outil de service et la documentation correspondante.",
+                reference: "Documentation City Multi"
+              },
+              {
+                title: "Alimentation de l'équipement",
+                question: "L'unité concernée dispose-t-elle de son alimentation normale ?",
+                instruction: "Contrôler l'alimentation et les protections selon le schéma électrique du modèle exact.",
+                detail: "Respecter les règles de consignation et de mesure électrique.",
+                yesLabel: "Alimentation conforme",
+                noLabel: "Anomalie",
+                noTitle: "Défaut d'alimentation",
+                noText: "Rechercher l'origine de l'absence d'alimentation et corriger avant de poursuivre.",
+                reference: "Schéma électrique constructeur"
+              },
+              {
+                title: "Communication",
+                question: "La liaison de communication est-elle conforme au schéma ?",
+                instruction: "Contrôler le câblage, les raccordements, les connexions et les éventuelles coupures conformément à la topologie de l'installation.",
+                detail: "Ne pas appliquer une méthode de mesure non prévue par le constructeur.",
+                yesLabel: "Liaison conforme",
+                noLabel: "Anomalie",
+                noTitle: "Défaut de communication à localiser",
+                noText: "Reprendre le contrôle de la liaison et des connexions sur le segment concerné.",
+                reference: "Documentation City Multi"
+              }
+            ]
+          },
+
+          "6831": {
+            title: "Anomalie de signal de télécommande MA",
+            meaning: "Le document Mitsubishi City Multi répertorie le code 6831 parmi les défauts de signal de télécommande MA.",
+            effect: "La commande ou sa communication peut être perturbée.",
+            source: {
+              manufacturer: "Mitsubishi Electric",
+              document: "City Multi Error Code",
+              reference: "CityMultiErrorCode V3",
+              revision: "13 décembre 2024",
+              chapter: "Défauts de télécommande MA",
+              pages: "Selon modèle",
+              url: "https://www.mitsubishielectric.com.sg/getmedia/d80ea241-92ab-43d3-a6ae-331eba54394f/CityMultiErrorCode_V3.pdf"
+            },
+            steps: [
+              {
+                title: "Identification de la commande",
+                question: "La télécommande et son type sont-ils identifiés ?",
+                instruction: "Vérifier le modèle de commande et sa compatibilité avec l'installation.",
+                detail: "La procédure dépend de la configuration exacte.",
+                yesLabel: "Identifiée",
+                noLabel: "Non identifiée",
+                noTitle: "Identification nécessaire",
+                noText: "Relever la référence de la télécommande et consulter sa documentation.",
+                reference: "Documentation constructeur"
+              },
+              {
+                title: "Liaison MA",
+                question: "La liaison de la télécommande est-elle conforme ?",
+                instruction: "Contrôler le câblage et les connexions selon le schéma correspondant à l'installation.",
+                detail: "Ne pas supposer un brochage universel.",
+                yesLabel: "Conforme",
+                noLabel: "Anomalie",
+                noTitle: "Défaut de liaison",
+                noText: "Corriger le raccordement ou le câblage identifié.",
+                reference: "Schéma électrique exact"
+              }
+            ]
+          },
+
+          "6832": {
+            title: "Anomalie de signal de télécommande MA",
+            meaning: "Le document Mitsubishi City Multi répertorie le code 6832 dans les défauts de signal de télécommande MA.",
+            effect: "La communication de la commande peut être perturbée.",
+            source: {
+              manufacturer: "Mitsubishi Electric",
+              document: "City Multi Error Code",
+              reference: "CityMultiErrorCode V3",
+              revision: "13 décembre 2024",
+              chapter: "Défauts de télécommande MA",
+              pages: "Selon modèle",
+              url: "https://www.mitsubishielectric.com.sg/getmedia/d80ea241-92ab-43d3-a6ae-331eba54394f/CityMultiErrorCode_V3.pdf"
+            },
+            steps: [
+              {
+                title: "Identification de la commande",
+                question: "La commande concernée est-elle identifiée ?",
+                instruction: "Relever sa référence, son adresse éventuelle et l'unité associée.",
+                detail: "Confirmer la configuration avec le schéma exact.",
+                yesLabel: "Identifiée",
+                noLabel: "Non identifiée",
+                noTitle: "Identification nécessaire",
+                noText: "Retrouver la référence et le schéma de la commande.",
+                reference: "Documentation constructeur"
+              },
+              {
+                title: "Contrôle de la liaison",
+                question: "Le raccordement est-il conforme au schéma ?",
+                instruction: "Inspecter le câblage et les connexions après consignation lorsque cela est nécessaire.",
+                detail: "Les contrôles électriques doivent suivre la notice exacte.",
+                yesLabel: "Conforme",
+                noLabel: "Anomalie",
+                noTitle: "Défaut de raccordement",
+                noText: "Corriger l'anomalie de câblage ou de connexion identifiée.",
+                reference: "Schéma constructeur"
+              }
+            ]
+          },
+
+          "6833": {
+            title: "Anomalie de signal de télécommande MA",
+            meaning: "Le document Mitsubishi City Multi répertorie le code 6833 dans les défauts de signal de télécommande MA.",
+            effect: "La commande peut ne pas communiquer normalement.",
+            source: {
+              manufacturer: "Mitsubishi Electric",
+              document: "City Multi Error Code",
+              reference: "CityMultiErrorCode V3",
+              revision: "13 décembre 2024",
+              chapter: "Défauts de télécommande MA",
+              pages: "Selon modèle",
+              url: "https://www.mitsubishielectric.com.sg/getmedia/d80ea241-92ab-43d3-a6ae-331eba54394f/CityMultiErrorCode_V3.pdf"
+            },
+            steps: [
+              {
+                title: "Identification",
+                question: "La télécommande et l'unité associée sont-elles identifiées ?",
+                instruction: "Relever les références et la configuration de commande.",
+                detail: "Vérifier la topologie de l'installation.",
+                yesLabel: "Identifiées",
+                noLabel: "Non identifiées",
+                noTitle: "Identification nécessaire",
+                noText: "Confirmer les références et la configuration.",
+                reference: "Documentation constructeur"
+              },
+              {
+                title: "Contrôle de la liaison",
+                question: "Le câblage est-il conforme ?",
+                instruction: "Contrôler le raccordement selon le schéma constructeur.",
+                detail: "Ne pas appliquer de brochage générique.",
+                yesLabel: "Conforme",
+                noLabel: "Anomalie",
+                noTitle: "Défaut de liaison",
+                noText: "Corriger le défaut identifié et vérifier à nouveau la communication.",
+                reference: "Schéma constructeur"
+              }
+            ]
+          },
+
+          "6834": {
+            title: "Anomalie de signal de télécommande MA",
+            meaning: "Le document Mitsubishi City Multi répertorie le code 6834 dans les défauts de signal de télécommande MA.",
+            effect: "La commande peut ne pas communiquer normalement.",
+            source: {
+              manufacturer: "Mitsubishi Electric",
+              document: "City Multi Error Code",
+              reference: "CityMultiErrorCode V3",
+              revision: "13 décembre 2024",
+              chapter: "Défauts de télécommande MA",
+              pages: "Selon modèle",
+              url: "https://www.mitsubishielectric.com.sg/getmedia/d80ea241-92ab-43d3-a6ae-331eba54394f/CityMultiErrorCode_V3.pdf"
+            },
+            steps: [
+              {
+                title: "Identification",
+                question: "La commande concernée est-elle identifiée ?",
+                instruction: "Identifier la télécommande, l'unité associée et la configuration du système.",
+                detail: "La procédure doit correspondre à la configuration réelle.",
+                yesLabel: "Identifiée",
+                noLabel: "Non identifiée",
+                noTitle: "Identification nécessaire",
+                noText: "Consulter la documentation de la configuration installée.",
+                reference: "Documentation constructeur"
+              },
+              {
+                title: "Contrôle de la liaison",
+                question: "Le raccordement est-il conforme ?",
+                instruction: "Contrôler le câblage, les connexions et la continuité selon la procédure constructeur.",
+                detail: "Ne pas déduire la panne d'une seule mesure non documentée.",
+                yesLabel: "Conforme",
+                noLabel: "Anomalie",
+                noTitle: "Défaut de liaison",
+                noText: "Corriger le défaut de raccordement constaté.",
+                reference: "Schéma constructeur"
+              }
+            ]
+          },
+
+          "7100": {
+            title: "Erreur de capacité totale",
+            meaning: "Le document Mitsubishi City Multi répertorie le code 7100 comme erreur de capacité totale.",
+            effect: "La configuration ou la capacité déclarée du système doit être vérifiée.",
+            source: {
+              manufacturer: "Mitsubishi Electric",
+              document: "City Multi Error Code",
+              reference: "CityMultiErrorCode V3",
+              revision: "13 décembre 2024",
+              chapter: "Erreur de capacité",
+              pages: "Selon modèle",
+              url: "https://www.mitsubishielectric.com.sg/getmedia/d80ea241-92ab-43d3-a6ae-331eba54394f/CityMultiErrorCode_V3.pdf"
+            },
+            steps: [
+              {
+                title: "Inventaire des unités",
+                question: "La liste des unités installées correspond-elle à la configuration prévue ?",
+                instruction: "Relever les références des unités intérieures et extérieures ainsi que la configuration réelle.",
+                detail: "Comparer avec le dossier de conception et les limites constructeur.",
+                yesLabel: "Configuration conforme",
+                noLabel: "Écart constaté",
+                noTitle: "Configuration à vérifier",
+                noText: "Reprendre l'inventaire et vérifier les références des unités installées.",
+                reference: "Documentation de combinaison constructeur"
+              },
+              {
+                title: "Capacité et combinaison",
+                question: "La combinaison de capacités respecte-t-elle les prescriptions du constructeur ?",
+                instruction: "Vérifier le ratio et les limites de combinaison dans la documentation correspondant aux références exactes.",
+                detail: "Ne pas appliquer un ratio générique à toutes les générations City Multi.",
+                yesLabel: "Combinaison conforme",
+                noLabel: "Combinaison non conforme",
+                noTitle: "Combinaison à corriger",
+                noText: "Recalculer la combinaison à partir des données officielles des unités concernées.",
+                reference: "Table de combinaison constructeur"
+              }
+            ]
+          },
+
+          "2502": {
+            title: "Défaut pompe de drainage",
+            meaning: "Le document Mitsubishi City Multi répertorie le code 2502 comme défaut de pompe de drainage sur les familles couvertes par le document.",
+            effect: "L'évacuation des condensats peut être interrompue.",
+            source: {
+              manufacturer: "Mitsubishi Electric",
+              document: "City Multi Error Code",
+              reference: "CityMultiErrorCode V3",
+              revision: "13 décembre 2024",
+              chapter: "Drain pump",
+              pages: "Selon modèle",
+              url: "https://www.mitsubishielectric.com.sg/getmedia/d80ea241-92ab-43d3-a6ae-331eba54394f/CityMultiErrorCode_V3.pdf"
+            },
+            steps: [
+              {
+                title: "Contrôle de l'évacuation",
+                question: "L'évacuation des condensats est-elle libre ?",
+                instruction: "Contrôler le bac, la tuyauterie, la pente, les raccordements et l'absence d'obstruction.",
+                detail: "Éviter tout débordement d'eau sur les équipements électriques.",
+                yesLabel: "Évacuation libre",
+                noLabel: "Obstruction ou défaut",
+                noTitle: "Défaut d'évacuation",
+                noText: "Nettoyer et corriger le réseau d'évacuation en respectant la configuration de l'installation.",
+                reference: "Documentation unité intérieure"
+              },
+              {
+                title: "Flotteur et détection",
+                question: "Le dispositif de détection de niveau fonctionne-t-il conformément à la notice ?",
+                instruction: "Contrôler le flotteur et son raccordement selon la procédure du modèle exact.",
+                detail: "Ne pas shunter une sécurité de niveau pour exploiter l'installation.",
+                yesLabel: "Conforme",
+                noLabel: "Anomalie",
+                noTitle: "Défaut de détection",
+                noText: "Identifier le défaut de flotteur, de câblage ou de commande avec la notice exacte.",
+                reference: "Schéma constructeur"
+              },
+              {
+                title: "Pompe de drainage",
+                question: "La pompe fonctionne-t-elle conformément à la procédure constructeur ?",
+                instruction: "Contrôler la pompe, son alimentation et son fonctionnement selon le manuel exact de l'unité.",
+                detail: "Ne pas appliquer de valeur électrique générique.",
+                yesLabel: "Fonctionnement conforme",
+                noLabel: "Anomalie",
+                noTitle: "Pompe à contrôler",
+                noText: "Identifier la panne de pompe, d'alimentation ou de commande à partir du schéma et du manuel exacts.",
+                reference: "Manuel de service exact"
               }
             ]
           }
@@ -1068,6 +1116,12 @@
       #${PAGE} .pcd-small{font-size:12px;color:#64748b}
       #${PAGE} .pcd-tag{display:inline-block;background:#e8f0fe;color:#0D47A1;padding:5px 9px;border-radius:20px;font-size:11px;font-weight:800;margin:3px 0}
       @media(max-width:520px){#${PAGE} .pcd-grid{grid-template-columns:1fr 1fr}}
+      @media print{
+        body *{visibility:hidden}
+        #pcdReport,#pcdReport *{visibility:visible}
+        #pcdReport{position:absolute;left:0;top:0;width:100%;border:0}
+        #${PAGE} .pcd-hero{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+      }
     `;
     document.head.appendChild(st);
   }
@@ -1091,8 +1145,8 @@
           <section class="pcd-card">
             <h3>🔎 Diagnostic par code défaut</h3>
             <p class="pcd-muted">
-              Sélectionne le constructeur, la gamme et la série de référence.
-              Tu peux saisir la référence complète inscrite sur la plaque signalétique.
+              Sélectionne le constructeur, la gamme et la série.
+              Saisis ensuite la référence complète inscrite sur la plaque signalétique.
             </p>
 
             <label class="pcd-field">1. Constructeur
@@ -1227,7 +1281,7 @@
       <strong>${esc(family)}</strong><br>
       ${models.length} séries ou familles de références proposées.<br>
       ${documented.length
-        ? `${documented.length} modèles disposent d'une entrée dans la base de procédures.`
+        ? `${documented.length} références ou familles disposent d'entrées dans la base de procédures.`
         : "Catalogue matériel disponible, mais aucune procédure de code défaut n'est encore intégrée pour cette gamme."}
     `;
   }
@@ -1241,7 +1295,10 @@
     const exactModels = procedures?.models || [];
     const codes = procedures?.codes || {};
 
-    const exactMatch = exactModels.includes(model);
+    const exactMatch = exactModels.some(item =>
+      normalize(item) === normalize(model)
+    );
+
     const available = exactMatch ? Object.keys(codes) : [];
 
     fillSelect(
@@ -1256,12 +1313,12 @@
     $("pcdResultatCode").innerHTML = "";
 
     $("pcdCatalogueInfo").innerHTML = available.length
-      ? `<strong>${esc(model)}</strong><br>Procédures disponibles : ${available.join(", ")}.`
-      : `<strong>${esc(model)}</strong><br>Référence de série identifiée dans le catalogue. La documentation de dépannage correspondant à cette série n'est pas encore intégrée. Tu peux saisir la référence complète sur la plaque signalétique.`;
+      ? `<strong>${esc(model)}</strong><br>Procédures disponibles : ${available.join(", ")}. La référence complète doit être confirmée sur la plaque.`
+      : `<strong>${esc(model)}</strong><br>Référence de série identifiée dans le catalogue. La documentation de dépannage correspondant à cette série n'est pas encore intégrée.`;
   }
 
   /* ========================================================
-     7. RÉCUPÉRATION DE LA PROCÉDURE
+     7. VALIDATION STRICTE DE LA RÉFÉRENCE
      ======================================================== */
 
   function getSelectedProcedure() {
@@ -1269,14 +1326,34 @@
     const family = $("pcdGamme").value;
     const model = $("pcdModele").value;
     const code = $("pcdCode").value;
+    const exactReference = $("pcdReferenceExacte").value.trim();
 
-    const procedure = DATABASE[brand]?.[family]?.codes?.[code];
-    if (!procedure) return null;
+    const entry = DATABASE[brand]?.[family];
+    const procedure = entry?.codes?.[code];
 
-    const supported = DATABASE[brand]?.[family]?.models || [];
-    if (!supported.includes(model)) return null;
+    if (!procedure || !model || !exactReference) return null;
 
-    return { ...procedure, brand, family, model, code };
+    const supported = entry.models || [];
+
+    const selectedSupported = supported.some(item =>
+      normalize(item) === normalize(model)
+    );
+
+    const exactSupported = supported.some(item =>
+      normalize(item) === normalize(exactReference)
+    );
+
+    if (!selectedSupported || !exactSupported) return null;
+
+    if (normalize(model) !== normalize(exactReference)) return null;
+
+    return {
+      ...procedure,
+      brand,
+      family,
+      model,
+      code
+    };
   }
 
   function analyzeFault() {
@@ -1287,15 +1364,21 @@
     const exactReference = $("pcdReferenceExacte").value.trim();
     const out = $("pcdResultatCode");
 
-    if (!brand || !family || !model || !code) {
-      out.innerHTML = `<div class="pcd-alert">Termine les quatre sélections : constructeur, gamme, référence et code défaut.</div>`;
+    if (!brand || !family || !model || !code || !exactReference) {
+      out.innerHTML = `<div class="pcd-alert">Termine les sélections : constructeur, gamme, référence, référence complète et code défaut.</div>`;
       return;
     }
 
     const procedure = getSelectedProcedure();
 
     if (!procedure) {
-      out.innerHTML = `<div class="pcd-alert">Aucune procédure vérifiée n'est disponible pour cette combinaison. Pro Clim ne propose pas de contrôles inventés.</div>`;
+      out.innerHTML = `
+        <div class="pcd-alert">
+          <strong>Référence non validée.</strong><br>
+          La procédure sélectionnée n'est pas autorisée pour la référence saisie.
+          Vérifie la plaque signalétique et sélectionne la référence exacte.
+          Pro Clim ne doit pas appliquer une procédure à une machine non couverte.
+        </div>`;
       return;
     }
 
@@ -1345,11 +1428,11 @@
 
         <p class="pcd-muted">
           Série : ${esc(f.model)}<br>
-          Référence plaque : ${esc(f.exactReference || "Non renseignée")}
+          Référence plaque : ${esc(f.exactReference)}
         </p>
 
         <div class="pcd-alert">
-          <strong>Signification constructeur</strong><br>${esc(p.meaning)}
+          <strong>Signification documentée</strong><br>${esc(p.meaning)}
         </div>
 
         <div class="pcd-progress"><span style="width:${progress}%"></span></div>
@@ -1442,7 +1525,8 @@
     const f = S.fault;
     if (!f || !f.branch) return;
 
-    f.branch.historyItem.observation = $("pcdFaultObservation")?.value.trim() || "";
+    f.branch.historyItem.observation =
+      $("pcdFaultObservation")?.value.trim() || "";
 
     $("pcdResultatCode").innerHTML = `
       <section class="pcd-card">
@@ -1491,7 +1575,7 @@
 
     $("pcdResultatCode").innerHTML = `
       <section class="pcd-card">
-        <h3>Parcours constructeur terminé</h3>
+        <h3>Parcours de contrôle terminé</h3>
         <div class="pcd-alert">
           Tous les contrôles de cette séquence ont été déclarés conformes.
           Cela ne prouve pas à lui seul que la panne est réparée.
@@ -1503,7 +1587,7 @@
         <div class="pcd-result">
           <strong>Code :</strong> ${esc(f.code)}<br>
           <strong>Série :</strong> ${esc(f.model)}<br>
-          <strong>Référence plaque :</strong> ${esc(f.exactReference || "Non renseignée")}<br>
+          <strong>Référence plaque :</strong> ${esc(f.exactReference)}<br>
           <strong>Constructeur :</strong> ${esc(f.brand)}
         </div>
 
@@ -1517,7 +1601,8 @@
           <p><a href="${esc(f.procedure.source.url)}" target="_blank" rel="noopener">Consulter le manuel</a></p>
         </div>
 
-        <button class="pcd-btn pcd-primary" data-action="fault-reset">Recommencer le diagnostic</button>
+        <button class="pcd-btn pcd-primary" data-action="fault-report">Créer un compte rendu</button>
+        <button class="pcd-btn pcd-secondary" data-action="fault-reset">Recommencer le diagnostic</button>
       </section>`;
 
     $("pcdResultatCode").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1699,7 +1784,8 @@
       return;
     }
 
-    if (![t,m,t1,r1,t2,r2].every(Number.isFinite) || m <= 0 || r1 <= 0 || r2 <= 0 || t1 === t2) {
+    if (![t,m,t1,r1,t2,r2].every(Number.isFinite) ||
+        m <= 0 || r1 <= 0 || r2 <= 0 || t1 === t2) {
       out.innerHTML = `<div class="pcd-alert">Renseigne des valeurs numériques valides. Les résistances doivent être positives et les températures différentes.</div>`;
       return;
     }
@@ -1728,7 +1814,9 @@
 
       if (Number.isFinite(tolerance) && tolerance >= 0) {
         const ok = delta <= tolerance;
-        verdict = ok ? `Dans la tolérance saisie (±${tolerance} %).` : `Hors de la tolérance saisie (±${tolerance} %).`;
+        verdict = ok
+          ? `Dans la tolérance saisie (±${tolerance} %).`
+          : `Hors de la tolérance saisie (±${tolerance} %).`;
         if (ok) cls += " pcd-good";
       }
     }
@@ -1778,14 +1866,14 @@
   }
 
   /* ========================================================
-     12. COMPTE RENDU
+     12. COMPTE RENDU — SYMPTÔME ET CODE DÉFAUT
      ======================================================== */
 
-  function report() {
+  function buildReportContent() {
     const p = PATHS[S.symptom];
-    if (!p) return;
-
     const get = id => $(id)?.value.trim() || "";
+
+    if (!p) return "";
 
     const lines = S.answers.map((answer,index) => `
       <div class="pcd-result">
@@ -1803,22 +1891,18 @@
       ["Fluide",get("pcdFluide")],
       ["Code défaut",get("pcdCode")],
       ["Contexte",get("pcdContexte")],
-      ["Température extérieure",get("mExt")+" °C"],
-      ["Température ambiante",get("mAmb")+" °C"],
-      ["Air repris",get("mReprise")+" °C"],
-      ["Air soufflé",get("mSouffle")+" °C"],
-      ["BP",get("mBP")+" bar"],
-      ["HP",get("mHP")+" bar"],
-      ["Intensité",get("mA")+" A"],
-      ["Tension",get("mV")+" V"],
+      ["Température extérieure",get("mExt") ? get("mExt")+" °C" : ""],
+      ["Température ambiante",get("mAmb") ? get("mAmb")+" °C" : ""],
+      ["Air repris",get("mReprise") ? get("mReprise")+" °C" : ""],
+      ["Air soufflé",get("mSouffle") ? get("mSouffle")+" °C" : ""],
+      ["BP",get("mBP") ? get("mBP")+" bar" : ""],
+      ["HP",get("mHP") ? get("mHP")+" bar" : ""],
+      ["Intensité",get("mA") ? get("mA")+" A" : ""],
+      ["Tension",get("mV") ? get("mV")+" V" : ""],
       ["Autres",get("mAutres")]
-    ].filter(item => item[1] && ![" °C"," bar"," A"," V"].includes(item[1]));
+    ].filter(item => item[1]);
 
-    $("pcdMesures").hidden = true;
-    const zone = $("pcdRapportZone");
-    zone.hidden = false;
-
-    zone.innerHTML = `
+    return `
       <section class="pcd-card" id="pcdReport">
         <div class="pcd-hero">
           <h2>PRO CLIM — Compte rendu dépannage</h2>
@@ -1829,11 +1913,88 @@
         <h3>Contrôles réalisés</h3>
         ${lines}
         <div class="pcd-alert">Compte rendu des observations saisies. La cause doit être confirmée avec les procédures et valeurs constructeur applicables.</div>
+      </section>`;
+  }
+
+  function report() {
+    const content = buildReportContent();
+    if (!content) return;
+
+    $("pcdMesures").hidden = true;
+    const zone = $("pcdRapportZone");
+    zone.hidden = false;
+
+    zone.innerHTML = `
+      ${content}
+      <button class="pcd-btn pcd-primary" data-action="copy">Copier le compte rendu</button>
+      <button class="pcd-btn pcd-secondary" data-action="print">Imprimer / enregistrer PDF</button>
+      <button class="pcd-btn pcd-secondary" data-action="home">Nouveau diagnostic</button>`;
+  }
+
+  function faultReport() {
+    const f = S.fault;
+    if (!f) return;
+
+    const history = f.history.map(item => `
+      <div class="pcd-result">
+        <strong>${item.number}. ${esc(item.title)}</strong>
+        <p>${esc(item.result)}</p>
+        <p>${esc(item.observation || "")}</p>
+      </div>`).join("");
+
+    $("pcdAccueil").hidden = true;
+    $("pcdParcours").hidden = true;
+    $("pcdBoard").hidden = true;
+    $("pcdMesures").hidden = true;
+
+    const zone = $("pcdRapportZone");
+    zone.hidden = false;
+
+    zone.innerHTML = `
+      <section class="pcd-card" id="pcdReport">
+        <div class="pcd-hero">
+          <h2>PRO CLIM — Compte rendu diagnostic</h2>
+          <p>${new Date().toLocaleString("fr-FR")}</p>
+        </div>
+
+        <h3>${esc(f.procedure.title)}</h3>
+        <div class="pcd-result">
+          <strong>Constructeur :</strong> ${esc(f.brand)}<br>
+          <strong>Gamme :</strong> ${esc(f.family)}<br>
+          <strong>Série :</strong> ${esc(f.model)}<br>
+          <strong>Référence :</strong> ${esc(f.exactReference)}<br>
+          <strong>Code défaut :</strong> ${esc(f.code)}<br>
+          <strong>Type :</strong> ${esc(f.type || "Non renseigné")}<br>
+          <strong>Fluide :</strong> ${esc(f.fluide || "Non renseigné")}
+        </div>
+
+        <div class="pcd-result">
+          <strong>Signification</strong>
+          <p>${esc(f.procedure.meaning)}</p>
+          <strong>Contexte de panne</strong>
+          <p>${esc(f.contexte || "Non renseigné")}</p>
+        </div>
+
+        <h3>Contrôles réalisés</h3>
+        ${history}
+
+        <div class="pcd-result">
+          <strong>Documentation</strong>
+          <p>${esc(f.procedure.source.document)}</p>
+          <p>${esc(f.procedure.source.reference)}</p>
+          <p>${esc(f.procedure.source.chapter)}</p>
+          <p>Pages : ${esc(f.procedure.source.pages)}</p>
+          <p><a href="${esc(f.procedure.source.url)}" target="_blank" rel="noopener">Consulter la documentation</a></p>
+        </div>
+
+        <div class="pcd-alert">
+          Ce document retranscrit les contrôles et observations saisis. Il ne constitue pas une certification de réparation.
+        </div>
       </section>
 
       <button class="pcd-btn pcd-primary" data-action="copy">Copier le compte rendu</button>
       <button class="pcd-btn pcd-secondary" data-action="print">Imprimer / enregistrer PDF</button>
-      <button class="pcd-btn pcd-secondary" data-action="home">Nouveau diagnostic</button>`;
+      <button class="pcd-btn pcd-secondary" data-action="home">Retour à l'accueil</button>`;
   }
 
   /* ========================================================
@@ -1845,6 +2006,7 @@
     S.step = 0;
     S.answers = [];
     S.fault = null;
+    S.report = null;
 
     ["pcdParcours","pcdBoard","pcdMesures","pcdRapportZone"].forEach(id => {
       $(id).hidden = true;
@@ -1862,11 +2024,30 @@
   async function copy() {
     const text = $("pcdReport")?.innerText || "";
 
+    if (!text) {
+      alert("Aucun compte rendu à copier.");
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(text);
       alert("Compte rendu copié.");
     } catch (error) {
-      alert("Copie indisponible. Sélectionne le texte du compte rendu.");
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+
+      try {
+        document.execCommand("copy");
+        alert("Compte rendu copié.");
+      } catch (copyError) {
+        alert("Copie indisponible. Sélectionne le texte du compte rendu.");
+      }
+
+      area.remove();
     }
   }
 
@@ -1916,6 +2097,10 @@
         faultRecheck();
         break;
 
+      case "fault-report":
+        faultReport();
+        break;
+
       case "fault-reset":
         if (S.fault) {
           const f = S.fault;
@@ -1929,7 +2114,7 @@
           $("pcdModele").value = f.model;
           updateModels();
 
-          $("pcdReferenceExacte").value = f.exactReference || f.model;
+          $("pcdReferenceExacte").value = f.exactReference;
           $("pcdCode").value = f.code;
 
           S.fault = null;
